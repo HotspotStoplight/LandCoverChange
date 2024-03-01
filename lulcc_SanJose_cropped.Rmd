@@ -38,16 +38,19 @@ And the development version from [GitHub](https://github.com/) with:
 ## The lulcc workflow
 *Adapted from https://www.geosci-model-dev.net/8/3215/2015/*
 
-The package includes two example datasets: one for Sibuyan Island in the Phillipines and one for the Plum Island Ecosystem in Massachusetts, United States. Here we present a complete working example for the Plum Island Ecosystem dataset.
+```{r}
+library(lulcc)
+library(raster)
+library(rasterVis)
+```
 
 ### 1. Raster data preparation
 
 Land use change modelling requires a large amount of input data. The most important input is at least one map of observed land use. In lulcc, this data is represented by the `ObsLulcRasterStack` class:
 
 ```{r LoadAndPrep}
-library(lulcc)
-load("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/UrbanExpansion/data/cropped/LandCover.Rdata")
-load("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/UrbanExpansion/data/cropped/Factors.Rdata")
+load("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/cropped/LandCover.Rdata")
+load("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/cropped/Factors.Rdata")
 
 # # URL of the raw .RData file
 # url <- "https://github.com/HotspotStoplight/HotspotStoplight/raw/main/UrbanExpansion/data/LandCover.RData"
@@ -70,14 +73,33 @@ load("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/UrbanExpansion/data/
 # data(LandCover)
 # data(Factors)
 
+# Check the unique values again
+for(i in 1:nlayers(LandCover)) {
+  print(unique(values(LandCover[[i]])))}
+
 obs <- ObsLulcRasterStack(x=LandCover,
                           pattern="lc",
                           categories=c(1,2,3,4),
-                          # labels=c("Forest","Other","Built","Water"),
-                          # labels=c("Other","Built","Forest","Water"),
-                          # labels=c("Built","Other","Forest","Water"),
-                          labels=c("Other","Forest","Built","Water"),
+                          labels=c('Forest', 'Other', 'Built', 'Water'),
                           t=c(0,10))
+
+                          # labels=c("Other","Forest","Built","Water"),
+
+```
+```{r}
+# Assuming your ObsLulcRasterStack 'obs' is compatible with raster plotting
+# Extract layers by time points (assuming two time points for simplicity)
+lc_2013_raster <- raster(obs, layer=1)
+lc_2023_raster <- raster(obs, layer=2)
+
+# Plot the first time point
+plot(lc_2013_raster, main="Land Cover 2013", col=c('darkgreen', 'tan', 'red', 'blue'), breaks=c(0.5, 1.5, 2.5, 3.5, 4.5), legend=FALSE)
+legend("topright", legend=c('Forest', 'Other', 'Built', 'Water'), fill=c('darkgreen', 'tan', 'red', 'blue'))
+
+# Plot the second time point
+plot(lc_2023_raster, main="Land Cover 2023", col=c('darkgreen', 'tan', 'red', 'blue'), breaks=c(0.5, 1.5, 2.5, 3.5, 4.5), legend=FALSE)
+legend("topright", legend=c('Forest', 'Other', 'Built', 'Water'), fill=c('darkgreen', 'tan', 'red', 'blue'))
+
 ```
 
 A useful starting point in land use change modelling is to obtain a transition matrix for two observed land use maps to identify the main transitions. This can be achieved with the `crossTabulate` function:
@@ -86,8 +108,6 @@ A useful starting point in land use change modelling is to obtain a transition m
 # obtain a transition matrix from land use maps for 1985 and 1991
 crossTabulate(obs, times=c(0,10))
 ```
-
-For the Plum Island Ecosystem site this reveals that the main transition was from forest to built areas.
 
 The next stage is to relate observed land use or observed land use transitions to spatially explicit biophysical or socioeconomic explanatory variables. These are loaded as follows:
 
@@ -124,9 +144,9 @@ Predictive models are represented by the `PredictiveModelList` class. For compar
 # fit models (note that a predictive model is required for each land use category)
 # Factors <- stack(pop2010, slope, dist_urban, dist_road, dist_highway)
 
-forms <- list(Built~ef_01+ef_02+ef_03+ef_04+ef_05,
-              Forest~ef_01+ef_02+ef_03+ef_04+ef_05,
+forms <- list(Forest~ef_01+ef_02+ef_03+ef_04+ef_05,
               Other~ef_01+ef_02+ef_03+ef_04+ef_05,
+              Built~ef_01+ef_02+ef_03+ef_04+ef_05,
               Water~ef_01+ef_02+ef_03+ef_04+ef_05)
 
 # generalized linear model models
@@ -161,7 +181,7 @@ rasterVis::levelplot(probmaps)
 
 ```{r}
 # Set Working Directory
-setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/UrbanExpansion/data")
+setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data")
 
 # Loop through each band
 for (i in 1:nlayers(probmaps)) {
@@ -221,15 +241,21 @@ Spatially explicit land use change models are usually driven by non-spatial esti
 
 ```{r Demand}
 # obtain demand scenario from extrapolated land use change
-dmd <- approxExtrapDemand(obs=obs, tout=0,10)
+dmd <- approxExtrapDemand(obs=obs, t=c(0,50))
 ```
+```{r}
+head(dmd)
+```
+
 
 ```{r Demand alternate}
 # # Example demand data for timesteps 0 and 10
 # dmd <- data.frame(
 #   timestep = c(0, 10),
 #   Forest = c(forest_area_at_0, forest_area_at_10),
-#   Urban = c(urban_area_at_0, urban_area_at_10)
+#   Other = c(other_area_at_0, other_area_at_10),
+#   Built = c(built_area_at_0, built_area_at_10),
+#   Water = c(water_area_at_0, water_area_at_10)
 # )
 ```
 
@@ -238,13 +264,24 @@ We then use a filter defined as a matrix within the `NeighbRasterStack` function
 ```{r Neigh}
 w <- matrix(data=1, nrow=3, ncol=3)
 nb <- NeighbRasterStack(x=obs[[1]], weights=w,
-                        categories=c(1,2,3))
+                        categories=c(1,2,3,4))
 ```
 
 The culmination of the modelling process is to simulate the location of land use change. lulcc provides a routine based on the CLUE-S model (Verburg et al., 2002) and a novel stochastic allocation procedure (with option for using the ordered method). The first step is to combine the various model inputs to ensure they are compatible:
 
+```{r}
+histRaster <- obs[[1]]  # This extracts the first layer as a RasterLayer
+
+# Create a dummy mask with the same dimensions, extent, and resolution as the reference raster
+dummyMask <- raster(extent(histRaster), nrows=nrow(histRaster), ncols=ncol(histRaster), crs=projection(histRaster))
+
+# Set all values in the dummy mask to 1
+dummyMask[] <- 1
+```
+
+
 ```{r CLUES}
-clues.rules <- matrix(data=1, nrow=3, ncol=3)
+clues.rules <- matrix(data=1, nrow=4, ncol=4)
 clues.parms <- list(jitter.f=0.0002,
                     scale.f=0.000001,
                     max.iter=1000,
@@ -252,18 +289,22 @@ clues.parms <- list(jitter.f=0.0002,
                     ave.diff=50)
 clues.model <- CluesModel(obs=obs,
                           ef=ef,
-                          models=glm.models,
-                          time=0:14,
+                          models=rf.models,
+                          time=c(0,50),
                           demand=dmd,
-                          elas=c(0.2,0.2,0.2),
+                          hist=histRaster,
+                          mask=dummyMask,  # Use the created dummy mask here
+                          neighb=nb,  # Correctly integrating the NeighbRasterStack
+                          elas=c(0.2,0.2,0.2,0.2),
                           rules=clues.rules,
                           params=clues.parms)
+
 ordered.model <- OrderedModel(obs=obs,
                               ef=ef,
-                              models=glm.models,
-                              time=0:14,
+                              models=rf.models,
+                              time=c(0,10),
                               demand=dmd,
-                              order=c(2,1,3))
+                              order=c(3,2,1,4))
 ```
 
 Then, finally, we can perform allocation:
@@ -271,6 +312,43 @@ Then, finally, we can perform allocation:
 ```{r Allocation}
 clues.model <- allocate(clues.model)
 ordered.model <- allocate(ordered.model, stochastic=TRUE)
+```
+
+```{r}
+summary(obs)
+summary(ef)
+lapply(glm.models, summary)
+summary(dmd)
+
+```
+
+
+```{r}
+# Assuming 'clues.model' is your CluesModel object
+outputStack <- clues.model@output
+
+# Basic plot using raster package
+plot(outputStack)
+
+# Advanced plotting with rasterVis
+levelplot(outputStack, 
+          col.regions=colorRampPalette(c("darkgreen", "tan", "red", "blue")), 
+          main="Future Land Use Categories (CLUE-S)")
+
+
+# Assuming 'ordered.model' is your ordered model object
+outputStack <- ordered.model@output
+
+# Basic plot using raster package
+plot(outputStack)
+
+# Advanced plotting with rasterVis
+levelplot(outputStack,
+          col.regions=colorRampPalette(c("darkgreen", "tan", "red", "blue")),
+          main="Future Land Use Categories (Ordered)")
+```
+```{r}
+unique(outputStack$layer)
 ```
 
 ### 4. Validation
@@ -281,7 +359,7 @@ An important yet frequently overlooked aspect of land use change modelling is mo
 # evaluate CLUE-S model output
 clues.tabs <- ThreeMapComparison(x=clues.model,
                                    factors=2^(1:8),
-                                   timestep=14)
+                                   timestep=10)
 ```
 
 From these tables we can easily extract information about different types of agreement and disagreement as well as compute summary statistics such as the figure of merit:
@@ -290,30 +368,8 @@ From these tables we can easily extract information about different types of agr
 clues.agr <- AgreementBudget(x=clues.tabs)
 plot(clues.agr, from=1, to=2)
 ```
+
 ```{r FigureOfMerit, echo=TRUE}
 clues.fom <- FigureOfMerit(x=clues.agr)
-plot(clues.fom, from=1, to=2)
-```
-
-```{r}
-# Load the necessary libraries
-library(raster)
-library(rasterVis)
-
-# Assuming 'clues.model' is your fitted and allocated model
-# Extract the land use maps
-maps <- ordered.model@maps
-
-# Plot the land use map for the first time step
-plot(maps[[1]], main = "Land use map for time step 1")
-
-# If you want to plot all the maps in a loop
-for (i in seq_len(nlayers(maps))) {
-  plot(maps[[i]], main = paste("Land use map for time step", i))
-}
-
-# Or using rasterVis package for a nicer plot
-levelplot(maps[[1]])
-
-
+plot(clues.fom, from=2, to=1)
 ```

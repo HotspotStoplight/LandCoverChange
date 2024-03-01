@@ -20,6 +20,7 @@ library(dplyr)
 library(readr)
 library(terra)
 library(corrplot)
+library(viridis)
 
 
 # Capture the start time
@@ -42,58 +43,63 @@ resolution <- (resolution/30)/3600
 # Read the GeoJSON file
 # cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop2.geojson")
 # cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop5b.geojson")
-cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop5a.geojson")
-# cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop5.geojson")
+# cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop5a.geojson")
+cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop5.geojson")
+# cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop6.geojson")
 
 # LAND COVER 2013
-url <- "https://github.com/HotspotStoplight/HotspotStoplight/raw/main/UrbanExpansion/data/Landcover_2013.tif"
+url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/Landcover_2013.tif"
 temp <- tempfile(fileext = ".tif")
 download.file(url, temp, method = "auto")
 lc_2013 <- raster(temp)
 
 # LAND COVER 2023
-url <- "https://github.com/HotspotStoplight/HotspotStoplight/raw/main/UrbanExpansion/data/Landcover_2023.tif"
+url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/Landcover_2023.tif"
 temp <- tempfile(fileext = ".tif")
 download.file(url, temp, method = "auto")
 lc_2023 <- raster(temp)
 
 # DISTANCE TO ROADS
-url <- "https://github.com/HotspotStoplight/HotspotStoplight/raw/main/UrbanExpansion/data/roads_proximity.tif"
+url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/roads_proximity.tif"
 temp <- tempfile(fileext = ".tif")
 download.file(url, temp, method = "auto")
 dist_road <- raster(temp)
 
 # DISTANCE TO HIGHWAYS
-url <- "https://github.com/HotspotStoplight/HotspotStoplight/raw/main/UrbanExpansion/data/highway_proximity.tif"
+url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/highway_proximity.tif"
 temp <- tempfile(fileext = ".tif")
 download.file(url, temp, method = "auto")
 dist_highway <- raster(temp)
 
 # POPULATION 2010
-url <- "https://github.com/HotspotStoplight/HotspotStoplight/raw/main/UrbanExpansion/data/Pop_2010_Crop4.tif"
+url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/Pop_2010_Crop4.tif"
 temp <- tempfile(fileext = ".tif")
 download.file(url, temp, method = "auto")
 pop2010 <- raster(temp)
 
 # POPULATION 2020
-url <- "https://github.com/HotspotStoplight/HotspotStoplight/raw/main/UrbanExpansion/data/Pop_2020_Crop4.tif"
+url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/Pop_2020_Crop4.tif"
 temp <- tempfile(fileext = ".tif")
 download.file(url, temp, method = "auto")
 pop2020 <- raster(temp)
 
 # SLOPE
-url <- "https://github.com/HotspotStoplight/HotspotStoplight/raw/main/UrbanExpansion/data/Slope.tif"
+url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/Slope.tif"
 temp <- tempfile(fileext = ".tif")
 download.file(url, temp, method = "auto")
 slope <- raster(temp)
 
 # DISTANCE TO URBAN LAND COVER
-url <- "https://github.com/HotspotStoplight/HotspotStoplight/raw/main/UrbanExpansion/data/dist2urban.tif"
+url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/dist2urban.tif"
 temp <- tempfile(fileext = ".tif")
 download.file(url, temp, method = "auto")
 dist_urban <- raster(temp)
 
 
+```
+```{r}
+# lc_2013[] <- as.integer(lc_2013[])
+# lc_2023[] <- as.integer(lc_2023[])
 ```
 
 
@@ -123,25 +129,25 @@ lc_2023 <- crop(lc_2023, cropbox)
 dist_road <- crop(dist_road, cropbox)
 dist_highway <- crop(dist_highway, cropbox)
 pop2010 <- crop(pop2010, cropbox)
+pop2020 <- crop(pop2020, cropbox)
 slope <- crop(slope, cropbox)
 dist_urban <- crop(dist_urban, cropbox)
-BII <- crop(BII, cropbox)
-LC_Vul_Clark <- crop(LC_Vul_Clark, cropbox)
 ```
 
+
+
 ```{r}
-plot(lc_2013)
-plot(lc_2023)
-plot(pop2010)
-plot(pop2020)
-plot(dist_road)
-plot(dist_highway)
-plot(slope)
-plot(wdpa)
-plot(dist_urban)
-plot(BII)
-plot(LC_Vul_Clark)
+plot(lc_2013, col=viridis(100))
+plot(lc_2023, col=viridis(100))
+plot(pop2010, col=viridis(100))
+plot(pop2020, col=viridis(100))
+plot(dist_road, col=viridis(100))
+plot(dist_highway, col=viridis(100))
+plot(slope, col=viridis(100))
+plot(dist_urban, col=viridis(100))
+
 ```
+
 
 ```{r, echo=FALSE}
 # # Check for Uniformity of raster data
@@ -153,7 +159,6 @@ res(dist_highway)
 res(pop2010)
 res(pop2020)
 res(slope)
-res(wdpa)
 # 
 # # Check Extents
 # extent(lc_2013)
@@ -176,6 +181,7 @@ crs(dist_road)
 # crs(wdpa)
 
 ```
+
 ```{r}
 # res(resolution_raster)
 ```
@@ -196,6 +202,22 @@ crs(dist_road)
 # dist_highway <- resample(dist_highway, dist_road, method = "bilinear")
 ```
 
+```{r}
+# Define the reclassification matrix
+reclass_matrix <- matrix(c(0, 0, 1, # Forest
+                           1, 1, 1, # Forest
+                           2, 2, 2, # Other
+                           3, 3, 3, # Urban
+                           4, 4, 4, # Water
+                           5, 5, 1),# Forest
+                         ncol = 3, byrow = TRUE)
+
+# Function to reclassify a raster layer
+reclassify_raster <- function(raster_layer) {
+  reclassify(raster_layer, reclass_matrix, right=NA)}
+
+lc_2013 <- reclassify_raster(lc_2013)
+```
 
 ```{r}
 # Make RasterStacks
@@ -205,25 +227,6 @@ names(LandCover) <- c("lc2013", "lc2023")
 Factors <- stack(pop2010, slope, dist_urban, dist_road, dist_highway)
 names(Factors) <- c("ef_01", "ef_02", "ef_03","ef_04","ef_05")
 
-# names(SanJose)
-for(i in 1:nlayers(LandCover)) {
-  print(unique(values(LandCover[[i]])))}
-
-# Define the reclassification matrix
-reclass_matrix <- matrix(c(0, 0, 1,
-                           1, 1, 1,
-                           2, 2, 2,
-                           3, 3, 3,
-                           4, 4, 4,
-                           5, 5, 1), ncol = 3, byrow = TRUE)
-
-# Function to reclassify a raster layer
-reclassify_raster <- function(raster_layer) {
-  reclassify(raster_layer, reclass_matrix, right=NA)}
-
-# Apply the reclassification to each layer in the RasterStack
-LandCover <- stack(lapply(1:nlayers(LandCover), function(i) reclassify_raster(LandCover[[i]])))
-
 # Check the unique values again
 for(i in 1:nlayers(LandCover)) {
   print(unique(values(LandCover[[i]])))}
@@ -231,7 +234,7 @@ for(i in 1:nlayers(LandCover)) {
 
 ```{r}
 # Set Directory
-setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/UrbanExpansion/data/cropped")
+setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/cropped")
 
 save(LandCover, file = "LandCover.RData")
 save(Factors, file = "Factors.RData")
