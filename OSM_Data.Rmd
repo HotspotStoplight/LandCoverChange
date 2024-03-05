@@ -27,15 +27,14 @@ start_time <- Sys.time()
 ## Setting Parameters
 ```{r}
 # coordinate_system <- 32756
-# 
-# resolution <- 300
+
 
 # coordinate_system <- 4326
 coordinate_system <- 5367
 # Target resolution in m
 resolution <- 30
 # Conversion to degrees
-resolution <- (resolution/30)/3600
+resolution <- resolution / (30*3600)
 
 ```
 

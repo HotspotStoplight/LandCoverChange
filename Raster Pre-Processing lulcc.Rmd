@@ -43,10 +43,10 @@ resolution_degrees <- resolution_meters / (30*3600)
 # Read the GeoJSON file
 # Crop5a is the largest cropbox that can be used for the land cover change prediction on OA's Macbook
 # cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop2.geojson")
-cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop4.geojson")
+# cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop4.geojson")
 # cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop5b.geojson")
 # cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop5a.geojson")
-# cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop5.geojson")
+cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop5.geojson")
 # cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop6.geojson")
 
 # LAND COVER 2013
@@ -129,6 +129,7 @@ lc_2023 <- resample(lc_2023, r, method = "ngb")
 pop2010 <- resample(pop2010, r, method = "bilinear")
 slope <- resample(slope, r, method = "bilinear")
 dist_urban <- resample(dist_urban, r, method = "bilinear")
+dist_road <- resample(dist_road, r, method = "bilinear")
 dist_highway <- resample(dist_highway, r, method = "bilinear")
 
 ```
@@ -165,13 +166,13 @@ plot(dist_urban, col=viridis(100))
 ```{r, echo=FALSE}
 # # Check for Uniformity of raster data
 # # Check Resolution
-res(lc_2013)
-res(lc_2023)
-res(dist_road)
-res(dist_highway)
-res(pop2010)
-res(pop2020)
-res(slope)
+# res(lc_2013)
+# res(lc_2023)
+# res(dist_road)
+# res(dist_highway)
+# res(pop2010)
+# res(pop2020)
+# res(slope)
 # 
 # # Check Extents
 # extent(lc_2013)
@@ -186,7 +187,7 @@ res(slope)
 # # Check Coordinate Systems
 # crs(lc_2013)
 # crs(lc_2023)
-crs(dist_road)
+# crs(dist_road)
 # crs(dist_highway)
 # crs(pop2010)
 # crs(pop2020)
@@ -226,7 +227,7 @@ reclass_matrix <- matrix(c(0, 0, 1, # Forest
                          ncol = 3, byrow = TRUE)
 
 # Function to reclassify a raster layer
-reclassify_raster <- function(raster_layer) {wawaw
+reclassify_raster <- function(raster_layer) {
   reclassify(raster_layer, reclass_matrix, right=NA)}
 
 lc_2013 <- reclassify_raster(lc_2013)

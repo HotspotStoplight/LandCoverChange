@@ -86,7 +86,7 @@ obs <- ObsLulcRasterStack(x=LandCover,
                           # labels=c("Other","Forest","Built","Water"),
 
 ```
-```{r}
+```{r, fig.width=10}
 # Assuming your ObsLulcRasterStack 'obs' is compatible with raster plotting
 # Extract layers by time points (assuming two time points for simplicity)
 lc_2013_raster <- raster(obs, layer=1)
@@ -323,7 +323,7 @@ summary(dmd)
 ```
 
 
-```{r}
+```{r, fig.width=10}
 # Assuming 'clues.model' is your CluesModel object
 clues_output <- clues.model@output
 
@@ -354,10 +354,15 @@ setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/dat
 
 writeRaster(clues_output, filename="clues_output.tif", format="GTiff", overwrite=TRUE)
 
+# Read the raster file
+clues_output_raster <- raster("clues_output.tif")
+
+# Plot the raster
+plot(clues_output_raster)
 ```
 ```{r}
 # Load the GeoTIFF file
-raster_layer <- raster("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/clues_output_2050.tif")
+raster_layer <- raster("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/clues_output_2050_90m.tif")
 
 # Plot the raster layer
 plot(raster_layer)
