@@ -33,18 +33,19 @@ start_time <- Sys.time()
 
 coordinate_system <- 4326
 # Target resolution in m
-resolution <- 30
+resolution_meters <- 90
 # Conversion to degrees
-resolution <- (resolution/30)/3600
+resolution_degrees <- resolution_meters / (30*3600)
 
 ```
 
 ```{r, echo=FALSE}
 # Read the GeoJSON file
-# Crop51 is the largest cropbox that can be used for the land cover change prediction on OA's Macbook
+# Crop5a is the largest cropbox that can be used for the land cover change prediction on OA's Macbook
 # cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop2.geojson")
+cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop4.geojson")
 # cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop5b.geojson")
-cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop5a.geojson")
+# cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop5a.geojson")
 # cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop5.geojson")
 # cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop6.geojson")
 
@@ -98,10 +99,6 @@ dist_urban <- raster(temp)
 
 
 ```
-```{r}
-# lc_2013[] <- as.integer(lc_2013[])
-# lc_2023[] <- as.integer(lc_2023[])
-```
 
 
 ```{r, echo=FALSE}
@@ -112,15 +109,30 @@ pop2020 <- projectRaster(pop2020, crs = coordinate_system, method = "bilinear")
 ```
 
 ```{r}
-# Resample each raster to match the resolution of prox_road
-lc_2013 <- resample(lc_2013, dist_road, method = "ngb")
-lc_2023 <- resample(lc_2023, dist_road, method = "ngb")
-pop2010 <- resample(pop2010, dist_road, method = "bilinear")
-slope <- resample(slope, dist_road, method = "bilinear")
-dist_urban <- resample(dist_urban, dist_road, method = "bilinear")
-dist_highway <- resample(dist_highway, dist_road, method = "bilinear")
+# Extract extent and crs from cropbox
+bbox <- st_bbox(cropbox)
+extent <- as(extent(bbox), "Extent")
+crs <- crs(cropbox)
+res <- resolution
+
+# Calculate the number of columns and rows based on the resolution and the extent
+nrows <- ceiling((extent@ymax - extent@ymin) / resolution_degrees)
+ncols <- ceiling((extent@xmax - extent@xmin) / resolution_degrees)
+
+# Create an empty raster with the specified extent, resolution, and CRS
+# Here, we manually specify xmn, xmx, ymn, ymx based on the extent object
+r <- raster(nrows=nrows, ncols=ncols, xmn=extent@xmin, xmx=extent@xmax, ymn=extent@ymin, ymx=extent@ymax, crs=crs)
+
+# Resample each raster to match the resolution of our empty raster
+lc_2013 <- resample(lc_2013, r, method = "ngb")
+lc_2023 <- resample(lc_2023, r, method = "ngb")
+pop2010 <- resample(pop2010, r, method = "bilinear")
+slope <- resample(slope, r, method = "bilinear")
+dist_urban <- resample(dist_urban, r, method = "bilinear")
+dist_highway <- resample(dist_highway, r, method = "bilinear")
 
 ```
+
 
 
 ```{r, echo=FALSE}

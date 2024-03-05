@@ -240,8 +240,10 @@ Another use of ROC analysis is to assess how well the models predict the cells i
 Spatially explicit land use change models are usually driven by non-spatial estimates of land use area for each timestep in the simulation. While many complex methods have been devised, in lulcc we simply provide a method for linear extrapolation of land use change, which relies on there being at least two observed land use maps:
 
 ```{r Demand}
+timewindow <- c(10,27)
+
 # obtain demand scenario from extrapolated land use change
-dmd <- approxExtrapDemand(obs=obs, t=c(0,50))
+dmd <- approxExtrapDemand(obs=obs, t=timewindow)
 ```
 ```{r}
 head(dmd)
@@ -290,11 +292,11 @@ clues.parms <- list(jitter.f=0.0002,
 clues.model <- CluesModel(obs=obs,
                           ef=ef,
                           models=rf.models,
-                          time=c(0,50),
+                          time=timewindow,
                           demand=dmd,
                           hist=histRaster,
-                          mask=dummyMask,  # Use the created dummy mask here
-                          neighb=nb,  # Correctly integrating the NeighbRasterStack
+                          mask=dummyMask,
+                          neighb=nb,
                           elas=c(0.2,0.2,0.2,0.2),
                           rules=clues.rules,
                           params=clues.parms)
@@ -317,39 +319,50 @@ ordered.model <- allocate(ordered.model, stochastic=TRUE)
 ```{r}
 summary(obs)
 summary(ef)
-lapply(glm.models, summary)
 summary(dmd)
-
 ```
 
 
 ```{r}
 # Assuming 'clues.model' is your CluesModel object
-outputStack <- clues.model@output
+clues_output <- clues.model@output
 
-# Basic plot using raster package
-plot(outputStack)
-
-# Advanced plotting with rasterVis
-levelplot(outputStack, 
+# Plotting with rasterVis
+levelplot(clues_output, 
           col.regions=colorRampPalette(c("darkgreen", "tan", "red", "blue")), 
           main="Future Land Use Categories (CLUE-S)")
 
 
-# Assuming 'ordered.model' is your ordered model object
-outputStack <- ordered.model@output
+# # Assuming 'ordered.model' is your ordered model object
+# ordered_output <- ordered.model@output
+# 
+# # Plotting with rasterVis
+# levelplot(ordered_output,
+#           col.regions=colorRampPalette(c("darkgreen", "tan", "red", "blue")),
+#           main="Future Land Use Categories (Ordered)")
 
-# Basic plot using raster package
-plot(outputStack)
+```
 
-# Advanced plotting with rasterVis
-levelplot(outputStack,
-          col.regions=colorRampPalette(c("darkgreen", "tan", "red", "blue")),
-          main="Future Land Use Categories (Ordered)")
+```{r}
+unique(clues_output$layer)
+# unique(ordered_output$layer)
+```
+
+```{r}
+# Set Working Directory
+setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data")
+
+writeRaster(clues_output, filename="clues_output.tif", format="GTiff", overwrite=TRUE)
+
 ```
 ```{r}
-unique(outputStack$layer)
+# Load the GeoTIFF file
+raster_layer <- raster("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/clues_output_2050.tif")
+
+# Plot the raster layer
+plot(raster_layer)
 ```
+
 
 ### 4. Validation
 
@@ -357,7 +370,7 @@ An important yet frequently overlooked aspect of land use change modelling is mo
 
 ```{r Threemap}
 # evaluate CLUE-S model output
-clues.tabs <- ThreeMapComparison(x=clues.model,
+clues.tabs <- ThreeMapComparison(x=clues.model@output,
                                    factors=2^(1:8),
                                    timestep=10)
 ```

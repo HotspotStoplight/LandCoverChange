@@ -30,7 +30,8 @@ start_time <- Sys.time()
 # 
 # resolution <- 300
 
-coordinate_system <- 4326
+# coordinate_system <- 4326
+coordinate_system <- 5367
 # Target resolution in m
 resolution <- 30
 # Conversion to degrees
