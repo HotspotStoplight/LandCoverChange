@@ -33,7 +33,7 @@ start_time <- Sys.time()
 
 coordinate_system <- 4326
 # Target resolution in m
-resolution_meters <- 90
+resolution_meters <- 30
 # Conversion to degrees
 resolution_degrees <- resolution_meters / (30*3600)
 
@@ -41,12 +41,15 @@ resolution_degrees <- resolution_meters / (30*3600)
 
 ```{r, echo=FALSE}
 # Read the GeoJSON file
-# Crop5a is the largest cropbox that can be used for the land cover change prediction on OA's Macbook
-# cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop2.geojson")
 # cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop4.geojson")
 # cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop5b.geojson")
-# cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop5a.geojson")
-cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop5.geojson")
+
+# Crop5a is the largest cropbox that can be used for the land cover change prediction at 30m resolution on OA's Macbook
+cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop5a.geojson")
+
+# Crop5 was the crop used for 90m resolution analysis on OA's Macbook
+# cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop5.geojson")
+
 # cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop6.geojson")
 
 # LAND COVER 2013
