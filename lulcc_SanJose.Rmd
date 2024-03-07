@@ -49,28 +49,20 @@ library(rasterVis)
 Land use change modelling requires a large amount of input data. The most important input is at least one map of observed land use. In lulcc, this data is represented by the `ObsLulcRasterStack` class:
 
 ```{r LoadAndPrep}
-# # URL of the raw .RData file
-url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop5_60m/Factors.RData"
-# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop5a_30m/Factors.RData"
-# Temporary file to store the downloaded data
-temp <- tempfile()
-# Download the file
-download.file(url, temp, method = "auto")
-# Load the data
-load(temp)
-# Clean up by removing the temporary file
-unlink(temp)
-# 
-# # Factors
-url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop5_60m/Factors.RData"
-# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop5a_30m/Factors.RData"
-temp <- tempfile()
-download.file(url, temp, method = "auto")
-load(temp)
-unlink(temp)
+# load("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/cropped/crop5_60m/LandCover.Rdata")
+# load("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/cropped/crop5_60m/Factors.Rdata")
 
-data(LandCover)
-data(Factors)
+# # LandCover
+# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/LandCover.RData"
+url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop5_60m/LandCover.RData"
+# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop5a_30m/LandCover.RData"
+load(url(url))
+
+# # Factors
+# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/Factors.RData"
+url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop5_60m/Factors.RData"
+# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop5a_30m/Factors.RData"
+load(url(url))
 
 # Check the unique values again
 for(i in 1:nlayers(LandCover)) {
@@ -85,7 +77,9 @@ obs <- ObsLulcRasterStack(x=LandCover,
                           # labels=c("Other","Forest","Built","Water"),
 
 ```
-```{r, fig.width=10}
+
+
+```{r, fig.width=12, fig.height=6.75}
 # Assuming your ObsLulcRasterStack 'obs' is compatible with raster plotting
 # Extract layers by time points (assuming two time points for simplicity)
 lc_2013_raster <- raster(obs, layer=1)

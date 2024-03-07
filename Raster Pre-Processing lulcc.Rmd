@@ -46,10 +46,10 @@ resolution_degrees <- resolution_meters / (30*3600)
 # cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop5b.geojson")
 
 # Crop5a is the largest cropbox that can be used for the land cover change prediction at 30m resolution on OA's Macbook
-# cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop5a.geojson")
+cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop5a.geojson")
 
 # Crop5 was the crop used for 60m resolution analysis on OA's Macbook
-cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop5.geojson")
+# cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop5.geojson")
 
 # cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop6.geojson")
 
@@ -253,8 +253,8 @@ for(i in 1:nlayers(LandCover)) {
 
 ```{r}
 # Set Directory
-setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/cropped/crop5_60m")
-# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/cropped/crop5a_30m")
+# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/cropped/crop5_60m")
+setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/cropped/crop5a_30m")
 
 save(LandCover, file = "LandCover.RData")
 save(Factors, file = "Factors.RData")
