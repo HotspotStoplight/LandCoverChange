@@ -53,15 +53,15 @@ Land use change modelling requires a large amount of input data. The most import
 # load("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/cropped/crop5_60m/Factors.Rdata")
 
 # # LandCover
-# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/LandCover.RData"
+url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop_asdf_60m/LandCover.RData"
 # url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop5_60m/LandCover.RData"
-url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop5a_30m/LandCover.RData"
+# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop5a_30m/LandCover.RData"
 load(url(url))
 
 # # Factors
-# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/Factors.RData"
+url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop_asdf_60m/Factors.RData"
 # url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop5_60m/Factors.RData"
-url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop5a_30m/Factors.RData"
+# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop5a_30m/Factors.RData"
 load(url(url))
 
 # Check the unique values again
@@ -171,10 +171,12 @@ probmaps <- rasterize(x=probmaps, y=obs[[1]],
                       field=names(probmaps))
 rasterVis::levelplot(probmaps)
 ```
-
+# OUTPUT PROBABILITY RASTERS
 ```{r}
 # Set Working Directory
-setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/OUTPUTS/Crop5_60m")
+setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/OUTPUTS/crop_asdf_60m")
+# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/OUTPUTS/Crop5_60m")
+# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/OUTPUTS/Crop5a_30m")
 
 # Loop through each band
 for (i in 1:nlayers(probmaps)) {
@@ -343,7 +345,9 @@ unique(clues_output$layer)
 
 ```{r}
 # Set Working Directory
-setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/OUTPUTS/Crop5_60m")
+setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/OUTPUTS/crop_asdf_60m")
+# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/OUTPUTS/Crop5_60m")
+# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/OUTPUTS/Crop5a_30m")
 
 writeRaster(clues_output, filename="clues_output_2050.tif", format="GTiff", overwrite=TRUE)
 
