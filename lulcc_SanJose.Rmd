@@ -54,14 +54,14 @@ Land use change modelling requires a large amount of input data. The most import
 
 # # LandCover
 # url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/LandCover.RData"
-url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop5_60m/LandCover.RData"
-# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop5a_30m/LandCover.RData"
+# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop5_60m/LandCover.RData"
+url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop5a_30m/LandCover.RData"
 load(url(url))
 
 # # Factors
 # url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/Factors.RData"
-url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop5_60m/Factors.RData"
-# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop5a_30m/Factors.RData"
+# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop5_60m/Factors.RData"
+url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop5a_30m/Factors.RData"
 load(url(url))
 
 # Check the unique values again
