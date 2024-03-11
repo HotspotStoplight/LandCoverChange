@@ -49,9 +49,6 @@ library(rasterVis)
 Land use change modelling requires a large amount of input data. The most important input is at least one map of observed land use. In lulcc, this data is represented by the `ObsLulcRasterStack` class:
 
 ```{r LoadAndPrep}
-# load("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/cropped/crop5_60m/LandCover.Rdata")
-# load("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/cropped/crop5_60m/Factors.Rdata")
-
 # # LandCover
 url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop_asdf_60m/LandCover.RData"
 # url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop5_60m/LandCover.RData"
@@ -73,8 +70,6 @@ obs <- ObsLulcRasterStack(x=LandCover,
                           categories=c(1,2,3,4),
                           labels=c('Forest', 'Other', 'Built', 'Water'),
                           t=c(0,10))
-
-                          # labels=c("Other","Forest","Built","Water"),
 
 ```
 
