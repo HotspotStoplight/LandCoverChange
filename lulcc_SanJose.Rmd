@@ -50,15 +50,17 @@ Land use change modelling requires a large amount of input data. The most import
 
 ```{r LoadAndPrep}
 # # LandCover
-url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop_asdf_60m/LandCover.RData"
+# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop_asdf_60m/LandCover.RData"
 # url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop5_60m/LandCover.RData"
 # url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop5a_30m/LandCover.RData"
+url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop6_30m/LandCover.RData"
 load(url(url))
 
 # # Factors
-url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop_asdf_60m/Factors.RData"
+# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop_asdf_60m/Factors.RData"
 # url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop5_60m/Factors.RData"
 # url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop5a_30m/Factors.RData"
+url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop6_30m/Factors.RData"
 load(url(url))
 
 # Check the unique values again
@@ -169,9 +171,10 @@ rasterVis::levelplot(probmaps)
 # OUTPUT PROBABILITY RASTERS
 ```{r}
 # Set Working Directory
-setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/OUTPUTS/crop_asdf_60m")
+# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/OUTPUTS/crop_asdf_60m")
 # setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/OUTPUTS/Crop5_60m")
 # setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/OUTPUTS/Crop5a_30m")
+setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/OUTPUTS/Crop6_30m")
 
 # Loop through each band
 for (i in 1:nlayers(probmaps)) {
@@ -274,11 +277,13 @@ dummyMask[] <- 1
 
 ```{r CLUES}
 clues.rules <- matrix(data=1, nrow=4, ncol=4)
+
 clues.parms <- list(jitter.f=0.0002,
                     scale.f=0.000001,
                     max.iter=1000,
                     max.diff=50,
                     ave.diff=50)
+
 clues.model <- CluesModel(obs=obs,
                           ef=ef,
                           models=rf.models,
@@ -335,17 +340,27 @@ levelplot(clues_output,
 
 ```{r}
 unique(clues_output$layer)
+
 # unique(ordered_output$layer)
 ```
 
+
 ```{r}
 # Set Working Directory
-setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/OUTPUTS/crop_asdf_60m")
-# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/OUTPUTS/Crop5_60m")
+# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/OUTPUTS/crop_asdf_60m")
+# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/OUTPUTS/crop5_60m")
 # setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/OUTPUTS/Crop5a_30m")
+setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/OUTPUTS/crop6_30m")
 
-writeRaster(clues_output, filename="clues_output_2050.tif", format="GTiff", overwrite=TRUE)
 
+# Extract the second band
+lc_2050 <- raster(clues_output, layer=2)
+
+# Export 2050 land cover data
+writeRaster(lc_2050, filename="lc_2050.tif", format="GTiff", overwrite=TRUE)
+
+# Export 2023 land cover data
+writeRaster(lc_2023_raster, filename="lc_2023.tif", format="GTiff", overwrite=TRUE)
 # # Check the raster file
 # # Read the raster file
 # clues_output_raster <- raster("clues_output.tif")
@@ -353,6 +368,13 @@ writeRaster(clues_output, filename="clues_output_2050.tif", format="GTiff", over
 # # Plot the raster
 # plot(clues_output_raster)
 ```
+```{r}
+
+# Export 2023 land cover data
+writeRaster(lc_2023_raster, filename="lc_2023.tif", format="GTiff", overwrite=TRUE)
+
+```
+
 
 
 ### 4. Validation

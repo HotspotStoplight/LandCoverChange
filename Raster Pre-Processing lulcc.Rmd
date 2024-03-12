@@ -33,8 +33,8 @@ start_time <- Sys.time()
 
 coordinate_system <- 4326
 # Target resolution in m
-# resolution_meters <- 30
-resolution_meters <- 60
+resolution_meters <- 30
+# resolution_meters <- 60
 # Conversion to degrees
 resolution_degrees <- resolution_meters / (30*3600)
 
@@ -43,7 +43,7 @@ resolution_degrees <- resolution_meters / (30*3600)
 ```{r, echo=FALSE}
 # Read the GeoJSON file for cropbox
 
-cropbox <- st_read("https://github.com/HotspotStoplight/HotspotStoplight/raw/main/CropBoxes/asdf_crop.geojson")
+# cropbox <- st_read("https://github.com/HotspotStoplight/HotspotStoplight/raw/main/CropBoxes/asdf_crop.geojson")
 # cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop4.geojson")
 # cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop5b.geojson")
 
@@ -53,7 +53,7 @@ cropbox <- st_read("https://github.com/HotspotStoplight/HotspotStoplight/raw/mai
 # Crop5 was the crop used for 60m resolution analysis on OA's Macbook
 # cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop5.geojson")
 
-# cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop6.geojson")
+cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop6.geojson")
 
 # LAND COVER 2013
 url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/Landcover_2013.tif"
@@ -257,7 +257,8 @@ for(i in 1:nlayers(LandCover)) {
 # Set Directory
 # setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/cropped/crop5_60m")
 # setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/cropped/crop5a_30m")
-setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/cropped/crop_asdf_60m")
+# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/cropped/crop_asdf_60m")
+setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/cropped/crop6_30m")
 
 save(LandCover, file = "LandCover.RData")
 save(Factors, file = "Factors.RData")
