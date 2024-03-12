@@ -368,14 +368,6 @@ writeRaster(lc_2023_raster, filename="lc_2023.tif", format="GTiff", overwrite=TR
 # # Plot the raster
 # plot(clues_output_raster)
 ```
-```{r}
-
-# Export 2023 land cover data
-writeRaster(lc_2023_raster, filename="lc_2023.tif", format="GTiff", overwrite=TRUE)
-
-```
-
-
 
 ### 4. Validation
 
