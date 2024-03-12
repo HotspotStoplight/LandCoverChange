@@ -1,0 +1,341 @@
+---
+title: "Raster Pre-Processing"
+output: html_document
+date: "2023-12-01"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+rm(list=ls())
+```
+
+## R Markdown
+
+```{r}
+library(osmdata)
+library(sf)
+library(ggplot2)
+library(raster)
+library(dplyr)
+library(readr)
+library(terra)
+library(corrplot)
+library(viridis)
+
+
+# Capture the start time
+start_time <- Sys.time()
+```
+
+## Setting Parameters
+```{r}
+coordinate_system <- 4326
+# coordinate_system <- CRS("+init=epsg:5367")
+# coordinate_system <- CRS("+init=epsg:32616")
+
+
+# # Target resolution in m
+# resolution <- 30
+# # Conversion to degrees
+# resolution <- (resolution/30)/3600
+
+```
+
+```{r, echo=FALSE}
+# Read the GeoJSON file
+# Crop5a is the largest cropbox that can be used for the land cover change prediction on OA's Macbook
+# cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop2.geojson")
+# cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop5b.geojson")
+cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop5a.geojson")
+# cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop5.geojson")
+# cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop6.geojson")
+
+# LAND COVER 2013
+url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/Landcover_2013.tif"
+temp <- tempfile(fileext = ".tif")
+download.file(url, temp, method = "auto")
+lc_2013 <- raster(temp)
+
+# LAND COVER 2023
+url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/Landcover_2023.tif"
+temp <- tempfile(fileext = ".tif")
+download.file(url, temp, method = "auto")
+lc_2023 <- raster(temp)
+
+# DISTANCE TO ROADS
+url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/roads_proximity.tif"
+temp <- tempfile(fileext = ".tif")
+download.file(url, temp, method = "auto")
+dist_road <- raster(temp)
+
+# DISTANCE TO HIGHWAYS
+url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/highway_proximity.tif"
+temp <- tempfile(fileext = ".tif")
+download.file(url, temp, method = "auto")
+dist_highway <- raster(temp)
+
+# POPULATION 2010
+url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/Pop_2010_Crop4.tif"
+temp <- tempfile(fileext = ".tif")
+download.file(url, temp, method = "auto")
+pop2010 <- raster(temp)
+
+# POPULATION 2020
+url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/Pop_2020_Crop4.tif"
+temp <- tempfile(fileext = ".tif")
+download.file(url, temp, method = "auto")
+pop2020 <- raster(temp)
+
+# SLOPE
+url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/Slope.tif"
+temp <- tempfile(fileext = ".tif")
+download.file(url, temp, method = "auto")
+slope <- raster(temp)
+
+# DISTANCE TO URBAN LAND COVER
+url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/dist2urban.tif"
+temp <- tempfile(fileext = ".tif")
+download.file(url, temp, method = "auto")
+dist_urban <- raster(temp)
+
+
+```
+
+
+```{r}
+# Define your list of raster objects
+# these rasters are not integers
+raster_list1 <- list(dist_road, dist_highway, pop2010, pop2020, slope, dist_urban)
+# these rasters are integers
+raster_list2 <- list(lc_2013, lc_2023)
+```
+
+
+```{r, echo=FALSE}
+# Names for the rasters in the lists
+raster_names1 <- c("dist_road", "dist_highway", "pop2010", "pop2020", "slope", "dist_urban")
+raster_names2 <- c("lc_2013", "lc_2023")
+
+# Process the first list (non-integers) with bilinear interpolation
+for (i in seq_along(raster_list1)) {
+  raster_obj <- raster_list1[[i]]
+  if (!identical(crs(raster_obj), coordinate_system)) {
+    raster_list1[[i]] <- projectRaster(raster_obj, crs = coordinate_system, method = "bilinear")
+  } else {
+    raster_list1[[i]] <- raster_obj
+  }
+}
+
+# Process the second list (integers) with nearest neighbor interpolation
+for (i in seq_along(raster_list2)) {
+  raster_obj <- raster_list2[[i]]
+  if (!identical(crs(raster_obj), coordinate_system)) {
+    raster_list2[[i]] <- projectRaster(raster_obj, crs = coordinate_system, method = "ngb")
+  } else {
+    raster_list2[[i]] <- raster_obj
+  }
+}
+
+# Naming the lists after projection
+names(raster_list1) <- raster_names1
+names(raster_list2) <- raster_names2
+
+```
+
+```{r}
+resolution <- res(raster_list2$lc_2013)
+
+# Function to resample rasters in raster_list1 with bilinear interpolation
+resample_rasters_bilinear <- function(raster_list1, resolution) {
+  resampled_list <- list()
+  for (i in seq_along(raster_list1)) {
+    raster_obj <- raster_list1[[i]]
+    current_res <- res(raster_obj)
+    # Check if resampling is needed
+    if (!(all.equal(current_res[1], resolution, tolerance = 1e-7) &&
+          all.equal(current_res[2], resolution, tolerance = 1e-7))) {
+      # Create a template raster with the desired resolution
+      template <- raster(extent(raster_obj), res=resolution, crs=crs(raster_obj))
+      # Resample using bilinear interpolation
+      resampled_list[[i]] <- resample(raster_obj, template, method="bilinear")
+    } else {
+      resampled_list[[i]] <- raster_obj
+    }
+  }
+  return(resampled_list)
+}
+
+# Function to resample rasters in raster_list2 with nearest neighbor interpolation
+resample_rasters_ngb <- function(raster_list2, resolution) {
+  resampled_list <- list()
+  for (i in seq_along(raster_list2)) {
+    raster_obj <- raster_list2[[i]]
+    current_res <- res(raster_obj)
+    # Check if resampling is needed
+    if (!(all.equal(current_res[1], resolution, tolerance = 1e-7) &&
+          all.equal(current_res[2], resolution, tolerance = 1e-7))) {
+      # Create a template raster with the desired resolution
+      template <- raster(extent(raster_obj), res=resolution, crs=crs(raster_obj))
+      # Resample using nearest neighbor interpolation
+      resampled_list[[i]] <- resample(raster_obj, template, method="ngb")
+    } else {
+      resampled_list[[i]] <- raster_obj
+    }
+  }
+  return(resampled_list)
+}
+
+
+# Resample raster_list1 using bilinear interpolation
+raster_list1 <- resample_rasters_bilinear(raster_list1, resolution)
+names(resampled_rasters1) <- raster_names1
+
+# Resample raster_list2 using nearest neighbor interpolation
+raster_list2 <- resample_rasters_ngb(raster_list2, resolution)
+names(resampled_rasters2) <- raster_names2
+
+```
+
+
+```{r}
+resolution <- res(raster_list2$lc_2013)
+
+# Resample each raster to match the specified resolution
+pop2010 <- resample(projected_rasters$pop2010, lc_2013, method = "bilinear")
+slope <- resample(slope, lc_2013, method = "bilinear")
+dist_urban <- resample(dist_urban, lc_2013, method = "bilinear")
+dist_highway <- resample(dist_highway, lc_2013, method = "bilinear")
+
+```
+
+
+```{r, echo=FALSE}
+# Clip the rasters with the polygon
+lc_2013 <- crop(lc_2013, cropbox)
+lc_2023 <- crop(lc_2023, cropbox)
+dist_road <- crop(dist_road, cropbox)
+dist_highway <- crop(dist_highway, cropbox)
+pop2010 <- crop(pop2010, cropbox)
+pop2020 <- crop(pop2020, cropbox)
+slope <- crop(slope, cropbox)
+dist_urban <- crop(dist_urban, cropbox)
+```
+
+
+
+```{r}
+plot(lc_2013, col=viridis(100))
+plot(lc_2023, col=viridis(100))
+plot(pop2010, col=viridis(100))
+plot(pop2020, col=viridis(100))
+plot(dist_road, col=viridis(100))
+plot(dist_highway, col=viridis(100))
+plot(slope, col=viridis(100))
+plot(dist_urban, col=viridis(100))
+
+```
+
+
+```{r, echo=FALSE}
+# # Check for Uniformity of raster data
+# # Check Resolution
+res(lc_2013)
+res(lc_2023)
+res(dist_road)
+res(dist_highway)
+res(pop2010)
+res(pop2020)
+res(slope)
+# 
+# # Check Extents
+# extent(lc_2013)
+# extent(lc_2023)
+# extent(dist_road)
+# extent(dist_highway)
+# extent(pop2010)
+# extent(pop2020)
+# extent(slope)
+# extent(wdpa)
+# 
+# # Check Coordinate Systems
+# crs(lc_2013)
+# crs(lc_2023)
+crs(dist_road)
+# crs(dist_highway)
+# crs(pop2010)
+# crs(pop2020)
+# crs(slope)
+# crs(wdpa)
+
+```
+
+```{r}
+# res(resolution_raster)
+```
+
+```{r}
+# ## Optional Downsampling
+# resolution_raster <- raster(res = resolution) # Create a raster with the desired resolution
+# extent(resolution_raster) <- extent(dist_road) # Set to the extent of your original raster
+# crs(resolution_raster) <- crs(dist_road) # Set the CRS of the new raster to match the CRS of the original raster
+# dist_road_resampled <- resample(dist_road, resolution_raster, method = "bilinear") # Perform the resampling
+# 
+# # Resample each raster to match the resolution of prox_road
+# lc_2013 <- resample(lc_2013, dist_road, method = "ngb")
+# lc_2023 <- resample(lc_2023, dist_road, method = "ngb")
+# pop2010 <- resample(pop2010, dist_road, method = "bilinear")
+# slope <- resample(slope, dist_road, method = "bilinear")
+# dist_urban <- resample(dist_urban, dist_road, method = "bilinear")
+# dist_highway <- resample(dist_highway, dist_road, method = "bilinear")
+```
+
+```{r}
+# Define the reclassification matrix
+reclass_matrix <- matrix(c(0, 0, 1, # Forest
+                           1, 1, 1, # Forest
+                           2, 2, 2, # Other
+                           3, 3, 3, # Urban
+                           4, 4, 4, # Water
+                           5, 5, 1),# Forest
+                         ncol = 3, byrow = TRUE)
+
+# Function to reclassify a raster layer
+reclassify_raster <- function(raster_layer) {
+  reclassify(raster_layer, reclass_matrix, right=NA)}
+
+lc_2013 <- reclassify_raster(lc_2013)
+lc_2023 <- reclassify_raster(lc_2023)
+```
+
+```{r}
+# Make RasterStacks
+LandCover <- stack(lc_2013, lc_2023)
+names(LandCover) <- c("lc2013", "lc2023")
+
+Factors <- stack(pop2010, slope, dist_urban, dist_road, dist_highway)
+names(Factors) <- c("ef_01", "ef_02", "ef_03","ef_04","ef_05")
+
+# Check the unique values again
+for(i in 1:nlayers(LandCover)) {
+  print(unique(values(LandCover[[i]])))}
+```
+
+```{r}
+# Set Directory
+setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/cropped")
+
+save(LandCover, file = "LandCover.RData")
+save(Factors, file = "Factors.RData")
+
+```
+
+
+```{r timer_end}
+# Capture the end time
+end_time <- Sys.time()
+
+# Calculate and print the runtime
+runtime <- end_time - start_time
+print(paste("Total runtime:", runtime))
+```
+
