@@ -26,7 +26,7 @@ lulcc provides a framework for spatially explicit land use change modelling in r
 You can install the released version of lulcc from [CRAN](https://CRAN.R-project.org) with:
 
 ``` {r}
-# install.packages("lulcc")
+install.packages("lulcc")
 ```
 
 And the development version from [GitHub](https://github.com/) with:
@@ -64,45 +64,46 @@ url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/croppe
 load(url(url))
 
 # Check the unique values again
-for(i in 1:nlayers(LandCover)) {
-  print(unique(values(LandCover[[i]])))}
+for (i in 1:nlayers(LandCover)) {
+  print(unique(values(LandCover[[i]])))
+}
 
-obs <- ObsLulcRasterStack(x=LandCover,
-                          pattern="lc",
-                          categories=c(1,2,3,4),
-                          labels=c('Forest', 'Other', 'Built', 'Water'),
-                          t=c(0,10))
-
+obs <- ObsLulcRasterStack(
+  x = LandCover,
+  pattern = "lc",
+  categories = c(1, 2, 3, 4),
+  labels = c("Forest", "Other", "Built", "Water"),
+  t = c(0, 10)
+)
 ```
 
 
 ```{r, fig.width=12, fig.height=6.75}
 # Assuming your ObsLulcRasterStack 'obs' is compatible with raster plotting
 # Extract layers by time points (assuming two time points for simplicity)
-lc_2013_raster <- raster(obs, layer=1)
-lc_2023_raster <- raster(obs, layer=2)
+lc_2013_raster <- raster(obs, layer = 1)
+lc_2023_raster <- raster(obs, layer = 2)
 
 # Plot the first time point
-plot(lc_2013_raster, main="Land Cover 2013", col=c('darkgreen', 'tan', 'red', 'blue'), breaks=c(0.5, 1.5, 2.5, 3.5, 4.5), legend=FALSE)
-legend("topright", legend=c('Forest', 'Other', 'Built', 'Water'), fill=c('darkgreen', 'tan', 'red', 'blue'))
+plot(lc_2013_raster, main = "Land Cover 2013", col = c("darkgreen", "tan", "red", "blue"), breaks = c(0.5, 1.5, 2.5, 3.5, 4.5), legend = FALSE)
+legend("topright", legend = c("Forest", "Other", "Built", "Water"), fill = c("darkgreen", "tan", "red", "blue"))
 
 # Plot the second time point
-plot(lc_2023_raster, main="Land Cover 2023", col=c('darkgreen', 'tan', 'red', 'blue'), breaks=c(0.5, 1.5, 2.5, 3.5, 4.5), legend=FALSE)
-legend("topright", legend=c('Forest', 'Other', 'Built', 'Water'), fill=c('darkgreen', 'tan', 'red', 'blue'))
-
+plot(lc_2023_raster, main = "Land Cover 2023", col = c("darkgreen", "tan", "red", "blue"), breaks = c(0.5, 1.5, 2.5, 3.5, 4.5), legend = FALSE)
+legend("topright", legend = c("Forest", "Other", "Built", "Water"), fill = c("darkgreen", "tan", "red", "blue"))
 ```
 
 A useful starting point in land use change modelling is to obtain a transition matrix for two observed land use maps to identify the main transitions. This can be achieved with the `crossTabulate` function:
 
 ```{r CrossTab, echo=TRUE}
 # obtain a transition matrix from land use maps for 1985 and 1991
-crossTabulate(obs, times=c(0,10))
+crossTabulate(obs, times = c(0, 10))
 ```
 
 The next stage is to relate observed land use or observed land use transitions to spatially explicit biophysical or socioeconomic explanatory variables. These are loaded as follows:
 
 ```{r PrepVars}
-ef <- ExpVarRasterList(x=Factors, pattern="ef")
+ef <- ExpVarRasterList(x = Factors, pattern = "ef")
 ```
 
 ### 2. Probability surface modelling
@@ -110,22 +111,28 @@ ef <- ExpVarRasterList(x=Factors, pattern="ef")
 To fit predictive models we first divide the study region into training and testing partitions. The `partition` function returns a list with cell numbers for each partition:
 
 ```{r Partition}
-part <- partition(x=obs[[1]],
-                  size=0.1, spatial=TRUE)
+part <- partition(
+  x = obs[[1]],
+  size = 0.1, spatial = TRUE
+)
 ```
 
 We then extract cell values for the training and testing partitions.
 
 ```{r TrainTest}
 # extract training data
-train.data <- getPredictiveModelInputData(obs=obs,
-                                          ef=ef,
-                                          cells=part[["train"]],
-                                          t=0)
+train.data <- getPredictiveModelInputData(
+  obs = obs,
+  ef = ef,
+  cells = part[["train"]],
+  t = 0
+)
 
-test.data <- getPredictiveModelInputData(obs=obs,
-                                         ef=ef,
-                                         cells=part[["test"]])
+test.data <- getPredictiveModelInputData(
+  obs = obs,
+  ef = ef,
+  cells = part[["test"]]
+)
 ```
 
 Predictive models are represented by the `PredictiveModelList` class. For comparison, we create a `PredictiveModelList` object for each type of predictive model:
@@ -134,38 +141,47 @@ Predictive models are represented by the `PredictiveModelList` class. For compar
 # fit models (note that a predictive model is required for each land use category)
 # Factors <- stack(pop2010, slope, dist_urban, dist_road, dist_highway)
 
-forms <- list(Forest~ef_01+ef_02+ef_03+ef_04+ef_05,
-              Other~ef_01+ef_02+ef_03+ef_04+ef_05,
-              Built~ef_01+ef_02+ef_03+ef_04+ef_05,
-              Water~ef_01+ef_02+ef_03+ef_04+ef_05)
+forms <- list(
+  Forest ~ ef_01 + ef_02 + ef_03 + ef_04 + ef_05,
+  Other ~ ef_01 + ef_02 + ef_03 + ef_04 + ef_05,
+  Built ~ ef_01 + ef_02 + ef_03 + ef_04 + ef_05,
+  Water ~ ef_01 + ef_02 + ef_03 + ef_04 + ef_05
+)
 
 # generalized linear model models
-glm.models <- glmModels(formula=forms,
-                        family=binomial,
-                        data=train.data,
-                        obs=obs)
+glm.models <- glmModels(
+  formula = forms,
+  family = binomial,
+  data = train.data,
+  obs = obs
+)
 # recursive partitioning and regression tree models
-rpart.models <- rpartModels(formula=forms,
-                            data=train.data,
-                            obs=obs)
+rpart.models <- rpartModels(
+  formula = forms,
+  data = train.data,
+  obs = obs
+)
 # random forest models (WARNING: takes a long time!)
-rf.models <- randomForestModels(formula=forms, data=train.data, obs=obs, na.action=na.omit)
-
+rf.models <- randomForestModels(formula = forms, data = train.data, obs = obs, na.action = na.omit)
 ```
 
 We can then use the fitted models to predict over the full data set and produce the probability surfaces for each fitted model:
 
 ```{r ProbabilityMaps, echo = TRUE, fig.width=10}
-all.data <- as.data.frame(x=ef, obs=obs, cells=part[["all"]])
+all.data <- as.data.frame(x = ef, obs = obs, cells = part[["all"]])
 
 # GLM
-probmaps <- predict(object=rf.models,
-                    newdata=all.data,
-                    data.frame=TRUE)
-points <- rasterToPoints(obs[[1]], spatial=TRUE)
+probmaps <- predict(
+  object = rf.models,
+  newdata = all.data,
+  data.frame = TRUE
+)
+points <- rasterToPoints(obs[[1]], spatial = TRUE)
 probmaps <- SpatialPointsDataFrame(points, probmaps)
-probmaps <- rasterize(x=probmaps, y=obs[[1]],
-                      field=names(probmaps))
+probmaps <- rasterize(
+  x = probmaps, y = obs[[1]],
+  field = names(probmaps)
+)
 rasterVis::levelplot(probmaps)
 ```
 # OUTPUT PROBABILITY RASTERS
@@ -187,28 +203,41 @@ for (i in 1:nlayers(probmaps)) {
   # Write the single band raster to a TIFF file
   writeRaster(single_band, filename, format = "GTiff", overwrite = TRUE)
 }
-
 ```
 
 
 Model performance is assessed using the receiver operator characteristic provided by the [ROCR](http://cran.r-project.org/web/packages/ROCR/index.html) package. lulcc includes classes `Prediction` and `Performance` which extend the native ROCR classes to contain multiple `prediction` and `performance` objects. The procedure to obtain these objects and assess performance is as follows:
 
 ```{r Performances, echo = TRUE}
-glm.pred <- PredictionList(models=glm.models,
-                           newdata=test.data)
-glm.perf <- PerformanceList(pred=glm.pred,
-                            measure="rch")
-rpart.pred <- PredictionList(models=rpart.models,
-                             newdata=test.data)
-rpart.perf <- PerformanceList(pred=rpart.pred,
-                              measure="rch")
-rf.pred <- PredictionList(models=rf.models,
-                          newdata=test.data)
-rf.perf <- PerformanceList(pred=rf.pred,
-                           measure="rch")
-plot(list(glm=glm.perf,
-          rpart=rpart.perf,
-          rf=rf.perf))
+glm.pred <- PredictionList(
+  models = glm.models,
+  newdata = test.data
+)
+glm.perf <- PerformanceList(
+  pred = glm.pred,
+  measure = "rch"
+)
+rpart.pred <- PredictionList(
+  models = rpart.models,
+  newdata = test.data
+)
+rpart.perf <- PerformanceList(
+  pred = rpart.pred,
+  measure = "rch"
+)
+rf.pred <- PredictionList(
+  models = rf.models,
+  newdata = test.data
+)
+rf.perf <- PerformanceList(
+  pred = rf.pred,
+  measure = "rch"
+)
+plot(list(
+  glm = glm.perf,
+  rpart = rpart.perf,
+  rf = rf.perf
+))
 ```
 
 Another use of ROC analysis is to assess how well the models predict the cells in which gain occurs between two time points. This is only possible if a second observed land use map is available for a subsequent time point. Here we perform this type of analysis for the gain of built between 1985 and 1991. First, we create a data partition in which cells not candidate for gain (cells belonging to built in 1985) are eliminated. We then assess the ability of the various predictive models to predict the gain of built in this partition:
@@ -233,10 +262,10 @@ Another use of ROC analysis is to assess how well the models predict the cells i
 Spatially explicit land use change models are usually driven by non-spatial estimates of land use area for each timestep in the simulation. While many complex methods have been devised, in lulcc we simply provide a method for linear extrapolation of land use change, which relies on there being at least two observed land use maps:
 
 ```{r Demand}
-timewindow <- c(10,27)
+timewindow <- c(10, 27)
 
 # obtain demand scenario from extrapolated land use change
-dmd <- approxExtrapDemand(obs=obs, t=timewindow)
+dmd <- approxExtrapDemand(obs = obs, t = timewindow)
 ```
 ```{r}
 head(dmd)
@@ -257,18 +286,20 @@ head(dmd)
 We then use a filter defined as a matrix within the `NeighbRasterStack` function to gather neighbor data from the land use change data.
 
 ```{r Neigh}
-w <- matrix(data=1, nrow=3, ncol=3)
-nb <- NeighbRasterStack(x=obs[[1]], weights=w,
-                        categories=c(1,2,3,4))
+w <- matrix(data = 1, nrow = 3, ncol = 3)
+nb <- NeighbRasterStack(
+  x = obs[[1]], weights = w,
+  categories = c(1, 2, 3, 4)
+)
 ```
 
 The culmination of the modelling process is to simulate the location of land use change. lulcc provides a routine based on the CLUE-S model (Verburg et al., 2002) and a novel stochastic allocation procedure (with option for using the ordered method). The first step is to combine the various model inputs to ensure they are compatible:
 
 ```{r}
-histRaster <- obs[[1]]  # This extracts the first layer as a RasterLayer
+histRaster <- obs[[1]] # This extracts the first layer as a RasterLayer
 
 # Create a dummy mask with the same dimensions, extent, and resolution as the reference raster
-dummyMask <- raster(extent(histRaster), nrows=nrow(histRaster), ncols=ncol(histRaster), crs=projection(histRaster))
+dummyMask <- raster(extent(histRaster), nrows = nrow(histRaster), ncols = ncol(histRaster), crs = projection(histRaster))
 
 # Set all values in the dummy mask to 1
 dummyMask[] <- 1
@@ -276,39 +307,45 @@ dummyMask[] <- 1
 
 
 ```{r CLUES}
-clues.rules <- matrix(data=1, nrow=4, ncol=4)
+clues.rules <- matrix(data = 1, nrow = 4, ncol = 4)
 
-clues.parms <- list(jitter.f=0.0002,
-                    scale.f=0.000001,
-                    max.iter=1000,
-                    max.diff=50,
-                    ave.diff=50)
+clues.parms <- list(
+  jitter.f = 0.0002,
+  scale.f = 0.000001,
+  max.iter = 1000,
+  max.diff = 50,
+  ave.diff = 50
+)
 
-clues.model <- CluesModel(obs=obs,
-                          ef=ef,
-                          models=rf.models,
-                          time=timewindow,
-                          demand=dmd,
-                          hist=histRaster,
-                          mask=dummyMask,
-                          neighb=nb,
-                          elas=c(0.2,0.2,0.2,0.2),
-                          rules=clues.rules,
-                          params=clues.parms)
+clues.model <- CluesModel(
+  obs = obs,
+  ef = ef,
+  models = rf.models,
+  time = timewindow,
+  demand = dmd,
+  hist = histRaster,
+  mask = dummyMask,
+  neighb = nb,
+  elas = c(0.2, 0.2, 0.2, 0.2),
+  rules = clues.rules,
+  params = clues.parms
+)
 
-ordered.model <- OrderedModel(obs=obs,
-                              ef=ef,
-                              models=rf.models,
-                              time=c(0,10),
-                              demand=dmd,
-                              order=c(3,2,1,4))
+ordered.model <- OrderedModel(
+  obs = obs,
+  ef = ef,
+  models = rf.models,
+  time = c(0, 10),
+  demand = dmd,
+  order = c(3, 2, 1, 4)
+)
 ```
 
 Then, finally, we can perform allocation:
 
 ```{r Allocation}
 clues.model <- allocate(clues.model)
-ordered.model <- allocate(ordered.model, stochastic=TRUE)
+ordered.model <- allocate(ordered.model, stochastic = TRUE)
 ```
 
 ```{r}
@@ -323,19 +360,19 @@ summary(dmd)
 clues_output <- clues.model@output
 
 # Plotting with rasterVis
-levelplot(clues_output, 
-          col.regions=colorRampPalette(c("darkgreen", "tan", "red", "blue")), 
-          main="Future Land Use Categories (CLUE-S)")
+levelplot(clues_output,
+  col.regions = colorRampPalette(c("darkgreen", "tan", "red", "blue")),
+  main = "Future Land Use Categories (CLUE-S)"
+)
 
 
 # # Assuming 'ordered.model' is your ordered model object
 # ordered_output <- ordered.model@output
-# 
+#
 # # Plotting with rasterVis
 # levelplot(ordered_output,
 #           col.regions=colorRampPalette(c("darkgreen", "tan", "red", "blue")),
 #           main="Future Land Use Categories (Ordered)")
-
 ```
 
 ```{r}
@@ -354,17 +391,17 @@ setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/OUT
 
 
 # Extract the second band
-lc_2050 <- raster(clues_output, layer=2)
+lc_2050 <- raster(clues_output, layer = 2)
 
 # Export 2050 land cover data
-writeRaster(lc_2050, filename="lc_2050.tif", format="GTiff", overwrite=TRUE)
+writeRaster(lc_2050, filename = "lc_2050.tif", format = "GTiff", overwrite = TRUE)
 
 # Export 2023 land cover data
-writeRaster(lc_2023_raster, filename="lc_2023.tif", format="GTiff", overwrite=TRUE)
+writeRaster(lc_2023_raster, filename = "lc_2023.tif", format = "GTiff", overwrite = TRUE)
 # # Check the raster file
 # # Read the raster file
 # clues_output_raster <- raster("clues_output.tif")
-# 
+#
 # # Plot the raster
 # plot(clues_output_raster)
 ```
@@ -375,19 +412,21 @@ An important yet frequently overlooked aspect of land use change modelling is mo
 
 ```{r Threemap}
 # evaluate CLUE-S model output
-clues.tabs <- ThreeMapComparison(x=clues.model@output,
-                                   factors=2^(1:8),
-                                   timestep=10)
+clues.tabs <- ThreeMapComparison(
+  x = clues.model@output,
+  factors = 2^(1:8),
+  timestep = 10
+)
 ```
 
 From these tables we can easily extract information about different types of agreement and disagreement as well as compute summary statistics such as the figure of merit:
 
 ```{r AgreementBudget, echo=TRUE}
-clues.agr <- AgreementBudget(x=clues.tabs)
-plot(clues.agr, from=1, to=2)
+clues.agr <- AgreementBudget(x = clues.tabs)
+plot(clues.agr, from = 1, to = 2)
 ```
 
 ```{r FigureOfMerit, echo=TRUE}
-clues.fom <- FigureOfMerit(x=clues.agr)
-plot(clues.fom, from=2, to=1)
+clues.fom <- FigureOfMerit(x = clues.agr)
+plot(clues.fom, from = 2, to = 1)
 ```
