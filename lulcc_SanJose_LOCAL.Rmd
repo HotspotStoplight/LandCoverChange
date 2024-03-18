@@ -43,17 +43,17 @@ Land use change modelling requires a large amount of input data. The most import
 
 ```{r LoadAndPrep}
 # # LandCover
-# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop_asdf_60m/LandCover.RData"
-# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop5_60m/LandCover.RData"
-# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop5a_30m/LandCover.RData"
-url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop6_30m/LandCover.RData"
+# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop_asdf_60m/LandCover.RData"
+# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop5_60m/LandCover.RData"
+# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop5a_30m/LandCover.RData"
+url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop6_30m/LandCover.RData"
 load(url(url))
 
 # # Factors
-# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop_asdf_60m/Factors.RData"
-# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop5_60m/Factors.RData"
-# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop5a_30m/Factors.RData"
-url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/cropped/crop6_30m/Factors.RData"
+# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop_asdf_60m/Factors.RData"
+# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop5_60m/Factors.RData"
+# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop5a_30m/Factors.RData"
+url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop6_30m/Factors.RData"
 load(url(url))
 
 # Check the unique values again
@@ -163,10 +163,10 @@ rasterVis::levelplot(probmaps)
 # OUTPUT PROBABILITY RASTERS
 ```{r}
 # Set Working Directory
-# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/OUTPUTS/crop_asdf_60m")
-# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/OUTPUTS/Crop5_60m")
-# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/OUTPUTS/Crop5a_30m")
-setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/OUTPUTS/Crop6_30m")
+# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop_asdf_60m")
+# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/Crop5_60m")
+# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/Crop5a_30m")
+setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/Crop6_30m")
 
 # Loop through each band
 for (i in 1:nlayers(probmaps)) {
@@ -200,7 +200,10 @@ rf.perf <- PerformanceList(pred=rf.pred,
                            measure="rch")
 
 # Set Working Directory
-setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/OUTPUTS/Crop6_30m")
+# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop_asdf_60m")
+# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/Crop5_60m")
+# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/Crop5a_30m")
+setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/Crop6_30m")
 
 # Specify the file path and name, along with desired dimensions
 png("ROC_Curves.png", width = 800, height = 600)
@@ -237,15 +240,12 @@ Spatially explicit land use change models are usually driven by non-spatial esti
 While many complex methods have been devised, in lulcc we simply provide a method for linear extrapolation of land use change, which relies on there being at least two observed land use maps:
 
 ```{r Demand}
-timewindow <- c(0,10,37)
+timewindow <- c(0,10)
 
 # obtain demand scenario from extrapolated land use change
 dmd <- approxExtrapDemand(obs=obs, tout=timewindow)
-```
 
-
-```{r}
-head(dmd)
+dmd
 ```
 
 
@@ -286,7 +286,7 @@ clues.rules <- matrix(data=1, nrow=4, ncol=4)
 
 clues.parms <- list(jitter.f=0.0002,
                     scale.f=0.000001,
-                    max.iter=1000,
+                    max.iter=5000,
                     max.diff=50,
                     ave.diff=50)
 
@@ -344,34 +344,6 @@ levelplot(clues_output,
 #           main="Future Land Use Categories (Ordered)")
 
 ```
-
-```{r}
-unique(clues_output$layer)
-
-# unique(ordered_output$layer)
-```
-
-
-```{r}
-# Set Working Directory
-# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/OUTPUTS/crop_asdf_60m")
-# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/OUTPUTS/crop5_60m")
-# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/OUTPUTS/Crop5a_30m")
-setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/OUTPUTS/crop6_30m")
-
-
-# Extract the second band
-lc_2050 <- raster(clues_output, layer=2)
-
-# Export 2050 land cover data
-writeRaster(lc_2050, filename="lc_2050.tif", format="GTiff", overwrite=TRUE)
-
-# Export 2023 land cover data
-writeRaster(lc_2023_raster, filename="lc_2023.tif", format="GTiff", overwrite=TRUE)
-
-
-```
-
 ### 4. Validation
 
 An important yet frequently overlooked aspect of land use change modelling is model validation. lulcc provides a recent validation method developed by Pontius et al. (2011), which simultaneously compares a reference (observed) map for time 1, a reference map for time 2 and a simulated map for time 2. The first step in this method is to calculate three dimensional contingency tables:
@@ -393,4 +365,29 @@ plot(clues.agr)
 ```{r FigureOfMerit, echo=TRUE}
 clues.fom <- FigureOfMerit(x=clues.agr)
 plot(clues.fom, from=1, to=2)
+plot(clues.fom, from=1, to=3)
+plot(clues.fom, from=2, to=3)
 ```
+
+
+# 5. Exporting Rasters 
+```{r}
+# Set Working Directory
+# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop_asdf_60m")
+# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/Crop5_60m")
+# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/Crop5a_30m")
+setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/Crop6_30m")
+
+
+# Extract the second band
+lc_2050 <- raster(clues_output, layer=2)
+
+# Export 2050 land cover data
+writeRaster(lc_2050, filename="lc_2050.tif", format="GTiff", overwrite=TRUE)
+
+# Export 2023 land cover data
+writeRaster(lc_2023_raster, filename="lc_2023.tif", format="GTiff", overwrite=TRUE)
+
+
+```
+

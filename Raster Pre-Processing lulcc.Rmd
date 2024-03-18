@@ -32,6 +32,7 @@ start_time <- Sys.time()
 # coordinate_system <- 32756
 
 coordinate_system <- 4326
+
 # Target resolution in m
 resolution_meters <- 30
 # resolution_meters <- 60
@@ -56,13 +57,13 @@ resolution_degrees <- resolution_meters / (30*3600)
 cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop6.geojson")
 
 # LAND COVER 2013
-url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/Landcover_2013.tif"
+url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/sanjose2013bespoke.tif"
 temp <- tempfile(fileext = ".tif")
 download.file(url, temp, method = "auto")
 lc_2013 <- raster(temp)
 
 # LAND COVER 2023
-url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/Landcover_2023.tif"
+url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/sanjose2023bespoke.tif"
 temp <- tempfile(fileext = ".tif")
 download.file(url, temp, method = "auto")
 lc_2023 <- raster(temp)
@@ -79,17 +80,24 @@ temp <- tempfile(fileext = ".tif")
 download.file(url, temp, method = "auto")
 dist_highway <- raster(temp)
 
-# POPULATION 2010
-url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/Pop_2010_Crop4.tif"
-temp <- tempfile(fileext = ".tif")
-download.file(url, temp, method = "auto")
-pop2010 <- raster(temp)
 
-# POPULATION 2020
-url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/Pop_2020_Crop4.tif"
+# POPULATION 2018
+url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/population2018.tif"
 temp <- tempfile(fileext = ".tif")
 download.file(url, temp, method = "auto")
-pop2020 <- raster(temp)
+pop2018 <- raster(temp)
+
+# # POPULATION 2010
+# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/Pop_2010_Crop4.tif"
+# temp <- tempfile(fileext = ".tif")
+# download.file(url, temp, method = "auto")
+# pop2010 <- raster(temp)
+# 
+# # POPULATION 2020
+# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/Pop_2020_Crop4.tif"
+# temp <- tempfile(fileext = ".tif")
+# download.file(url, temp, method = "auto")
+# pop2020 <- raster(temp)
 
 # SLOPE
 url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/Slope.tif"
@@ -109,8 +117,15 @@ dist_urban <- raster(temp)
 
 ```{r, echo=FALSE}
 # Project the rasters
-pop2010 <- projectRaster(pop2010, crs = coordinate_system, method = "bilinear")
-pop2020 <- projectRaster(pop2020, crs = coordinate_system, method = "bilinear")
+# pop2010 <- projectRaster(pop2010, crs = coordinate_system, method = "bilinear")
+# pop2020 <- projectRaster(pop2020, crs = coordinate_system, method = "bilinear")
+# pop2018 <- projectRaster(pop2018, crs = coordinate_system, method = "bilinear")
+# 
+# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/")
+# 
+# # Export the raster as a GeoTIFF
+# output_filename <- "population2018.tif"
+# writeRaster(pop2018, filename=output_filename, format="GTiff", overwrite=TRUE)
 
 ```
 
@@ -132,7 +147,8 @@ r <- raster(nrows=nrows, ncols=ncols, xmn=extent@xmin, xmx=extent@xmax, ymn=exte
 # Resample each raster to match the resolution of our empty raster
 lc_2013 <- resample(lc_2013, r, method = "ngb")
 lc_2023 <- resample(lc_2023, r, method = "ngb")
-pop2010 <- resample(pop2010, r, method = "bilinear")
+# pop2010 <- resample(pop2010, r, method = "bilinear")
+pop2018 <- resample(pop2018, r, method = "bilinear")
 slope <- resample(slope, r, method = "bilinear")
 dist_urban <- resample(dist_urban, r, method = "bilinear")
 dist_road <- resample(dist_road, r, method = "bilinear")
@@ -148,8 +164,9 @@ lc_2013 <- crop(lc_2013, cropbox)
 lc_2023 <- crop(lc_2023, cropbox)
 dist_road <- crop(dist_road, cropbox)
 dist_highway <- crop(dist_highway, cropbox)
-pop2010 <- crop(pop2010, cropbox)
-pop2020 <- crop(pop2020, cropbox)
+pop2010 <- crop(pop2018, cropbox)
+# pop2010 <- crop(pop2010, cropbox)
+# pop2020 <- crop(pop2020, cropbox)
 slope <- crop(slope, cropbox)
 dist_urban <- crop(dist_urban, cropbox)
 ```
@@ -159,51 +176,14 @@ dist_urban <- crop(dist_urban, cropbox)
 ```{r}
 plot(lc_2013, col=viridis(100))
 plot(lc_2023, col=viridis(100))
-plot(pop2010, col=viridis(100))
-plot(pop2020, col=viridis(100))
+plot(pop2018, col=viridis(100))
+# plot(pop2010, col=viridis(100))
+# plot(pop2020, col=viridis(100))
 plot(dist_road, col=viridis(100))
 plot(dist_highway, col=viridis(100))
 plot(slope, col=viridis(100))
 plot(dist_urban, col=viridis(100))
 
-```
-
-
-```{r, echo=FALSE}
-# # Check for Uniformity of raster data
-# # Check Resolution
-# res(lc_2013)
-# res(lc_2023)
-# res(dist_road)
-# res(dist_highway)
-# res(pop2010)
-# res(pop2020)
-# res(slope)
-# 
-# # Check Extents
-# extent(lc_2013)
-# extent(lc_2023)
-# extent(dist_road)
-# extent(dist_highway)
-# extent(pop2010)
-# extent(pop2020)
-# extent(slope)
-# extent(wdpa)
-# 
-# # Check Coordinate Systems
-# crs(lc_2013)
-# crs(lc_2023)
-# crs(dist_road)
-# crs(dist_highway)
-# crs(pop2010)
-# crs(pop2020)
-# crs(slope)
-# crs(wdpa)
-
-```
-
-```{r}
-# res(resolution_raster)
 ```
 
 ```{r}
@@ -245,7 +225,7 @@ lc_2023 <- reclassify_raster(lc_2023)
 LandCover <- stack(lc_2013, lc_2023)
 names(LandCover) <- c("lc2013", "lc2023")
 
-Factors <- stack(pop2010, slope, dist_urban, dist_road, dist_highway)
+Factors <- stack(pop2018, slope, dist_urban, dist_road, dist_highway)
 names(Factors) <- c("ef_01", "ef_02", "ef_03","ef_04","ef_05")
 
 # Check the unique values again
@@ -255,10 +235,10 @@ for(i in 1:nlayers(LandCover)) {
 
 ```{r}
 # Set Directory
-# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/cropped/crop5_60m")
-# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/cropped/crop5a_30m")
-# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/cropped/crop_asdf_60m")
-setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/cropped/crop6_30m")
+# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop5_60m")
+# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop5a_30m")
+# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop_asdf_60m")
+setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop6_30m")
 
 save(LandCover, file = "LandCover.RData")
 save(Factors, file = "Factors.RData")
