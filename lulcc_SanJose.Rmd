@@ -11,14 +11,6 @@ knitr::opts_chunk$set(
 )
 ```
 
-# lulcc <img src="inst/images/lulcc_sticker.png" align="right" width=150/>
-
-[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
-[![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/lulcc)](https://CRAN.R-project.org/package=lulcc)
-[![Downloads](http://cranlogs.r-pkg.org/badges/lulcc)](https://CRAN.R-project.org/package=lulcc)
-[![Lifecycle: maturing](https://img.shields.io/badge/lifecycle-maturing-orange.svg)](https://www.tidyverse.org/lifecycle/#maturing)
-![R-CMD-check](https://github.com/simonmoulds/r_lulcc/workflows/R-CMD-check/badge.svg)
-
 lulcc provides a framework for spatially explicit land use change modelling in r. The long term goal of lulcc is to  provide a smart and tidy interface to running the standard land use change modelling in 4 steps: raster data prepping, probability surface generation, allocation and validation, in one tidy package.
 
 ## Installation
@@ -29,12 +21,6 @@ You can install the released version of lulcc from [CRAN](https://CRAN.R-project
 # install.packages("lulcc")
 ```
 
-And the development version from [GitHub](https://github.com/) with:
-
-``` {r}
-# install.packages("devtools")
-# devtools::install_github("simonmoulds/lulcc")
-```
 ## The lulcc workflow
 *Adapted from https://www.geosci-model-dev.net/8/3215/2015/*
 
@@ -78,6 +64,7 @@ obs <- ObsLulcRasterStack(
 ```
 
 
+<<<<<<< Updated upstream
 ```{r, fig.width=12, fig.height=6.75}
 # Assuming your ObsLulcRasterStack 'obs' is compatible with raster plotting
 # Extract layers by time points (assuming two time points for simplicity)
@@ -99,6 +86,8 @@ A useful starting point in land use change modelling is to obtain a transition m
 # obtain a transition matrix from land use maps for 1985 and 1991
 crossTabulate(obs, times = c(0, 10))
 ```
+=======
+>>>>>>> Stashed changes
 
 The next stage is to relate observed land use or observed land use transitions to spatially explicit biophysical or socioeconomic explanatory variables. These are loaded as follows:
 
@@ -178,11 +167,16 @@ probmaps <- predict(
 )
 points <- rasterToPoints(obs[[1]], spatial = TRUE)
 probmaps <- SpatialPointsDataFrame(points, probmaps)
+<<<<<<< Updated upstream
 probmaps <- rasterize(
   x = probmaps, y = obs[[1]],
   field = names(probmaps)
 )
 rasterVis::levelplot(probmaps)
+=======
+probmaps <- rasterize(x=probmaps, y=obs[[1]],
+                      field=names(probmaps))
+>>>>>>> Stashed changes
 ```
 # OUTPUT PROBABILITY RASTERS
 ```{r}
@@ -209,6 +203,7 @@ for (i in 1:nlayers(probmaps)) {
 Model performance is assessed using the receiver operator characteristic provided by the [ROCR](http://cran.r-project.org/web/packages/ROCR/index.html) package. lulcc includes classes `Prediction` and `Performance` which extend the native ROCR classes to contain multiple `prediction` and `performance` objects. The procedure to obtain these objects and assess performance is as follows:
 
 ```{r Performances, echo = TRUE}
+<<<<<<< Updated upstream
 glm.pred <- PredictionList(
   models = glm.models,
   newdata = test.data
@@ -238,6 +233,34 @@ plot(list(
   rpart = rpart.perf,
   rf = rf.perf
 ))
+=======
+glm.pred <- PredictionList(models=glm.models,
+                           newdata=test.data)
+glm.perf <- PerformanceList(pred=glm.pred,
+                            measure="rch")
+rpart.pred <- PredictionList(models=rpart.models,
+                             newdata=test.data)
+rpart.perf <- PerformanceList(pred=rpart.pred,
+                              measure="rch")
+rf.pred <- PredictionList(models=rf.models,
+                          newdata=test.data)
+rf.perf <- PerformanceList(pred=rf.pred,
+                           measure="rch")
+
+# Set Working Directory
+setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/OUTPUTS/Crop6_30m")
+
+# Specify the file path and name, along with desired dimensions
+png("ROC_Curves.png", width = 800, height = 600)
+
+# Your plotting code
+plot(list(glm=glm.perf,
+          rpart=rpart.perf,
+          rf=rf.perf))
+
+# Close the plotting device
+dev.off()
+>>>>>>> Stashed changes
 ```
 
 Another use of ROC analysis is to assess how well the models predict the cells in which gain occurs between two time points. This is only possible if a second observed land use map is available for a subsequent time point. Here we perform this type of analysis for the gain of built between 1985 and 1991. First, we create a data partition in which cells not candidate for gain (cells belonging to built in 1985) are eliminated. We then assess the ability of the various predictive models to predict the gain of built in this partition:
