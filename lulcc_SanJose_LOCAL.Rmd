@@ -43,17 +43,20 @@ Land use change modelling requires a large amount of input data. The most import
 
 ```{r LoadAndPrep}
 # # LandCover
+
+url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop4_90m/LandCover.RData"
 # url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop_asdf_60m/LandCover.RData"
 # url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop5_60m/LandCover.RData"
 # url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop5a_30m/LandCover.RData"
-url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop6_30m/LandCover.RData"
+# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop6_30m/LandCover.RData"
 load(url(url))
 
 # # Factors
+url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop4_90m/Factors.RData"
 # url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop_asdf_60m/Factors.RData"
 # url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop5_60m/Factors.RData"
 # url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop5a_30m/Factors.RData"
-url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop6_30m/Factors.RData"
+# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop6_30m/Factors.RData"
 load(url(url))
 
 # Check the unique values again
@@ -167,10 +170,11 @@ rasterVis::levelplot(probmaps)
 # OUTPUT PROBABILITY RASTERS
 ```{r}
 # Set Working Directory
+setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/Crop4_90m")
 # setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop_asdf_60m")
 # setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/Crop5_60m")
 # setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/Crop5a_30m")
-setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/Crop6_30m")
+# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/Crop6_30m")
 
 # Loop through each band
 for (i in 1:nlayers(probmaps)) {
@@ -213,10 +217,11 @@ plot(list(glm=glm.perf,
 Export ROC Curves
 ```{r}
 # Set Working Directory
+setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop4_90m")
 # setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop_asdf_60m")
 # setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/Crop5_60m")
 # setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/Crop5a_30m")
-setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/Crop6_30m")
+# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/Crop6_30m")
 
 # Specify the file path and name, along with desired dimensions
 png("ROC_Curves.png", width = 1600, height = 900)
@@ -371,10 +376,10 @@ plot(clues.agr)
 Export Agreement Plot
 ```{r}
 # Set Working Directory
-# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop_asdf_60m")
+setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop4_90m")
 # setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/Crop5_60m")
 # setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/Crop5a_30m")
-setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/Crop6_30m")
+# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/Crop6_30m")
 
 # Specify the file path and name, along with desired dimensions
 png("Clue-S_AgreementBudget.png", width = 1600, height = 900)
@@ -479,10 +484,10 @@ levelplot(clues_output,
 # 5. Exporting Rasters 
 ```{r}
 # Set Working Directory
-# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop_asdf_60m")
-# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/Crop5_60m")
-# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/Crop5a_30m")
-setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/Crop6_30m")
+setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop_4_90m")
+# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop5_60m")
+# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop5a_30m")
+# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop6_30m")
 
 
 # Extract the second band
