@@ -35,92 +35,108 @@ coordinate_system <- 4326
 
 # Target resolution in m
 # resolution_meters <- 30
-# resolution_meters <- 60
-resolution_meters <- 90
+resolution_meters <- 100
 # Conversion to degrees
 resolution_degrees <- resolution_meters / (30*3600)
 
 ```
 
 ```{r, echo=FALSE}
+# outputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop6_30m'
+outputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop4_100m'
+
+# Base directory
+inputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/'
+
+# List of file names
+filenames <- c('sanjose2013bespoke.tif', 'sanjose2023bespoke.tif', 'roads_proximity.tif', 'highway_proximity.tif', 'population2018.tif', 'Slope.tif', 'dist2urban.tif')
+
+# List of desired variable names corresponding to each file
+var_names <- c('lc_2013', 'lc_2023', 'dist_road', 'dist_highway', 'pop2018', 'slope', 'dist_urban')
+
+# Loop through each file name
+for (i in 1:length(filenames)) {
+  # Generate the full path for the current file
+  full_path <- file.path(inputs, filenames[i])
+  
+  # Create a raster object from the file
+  temp_raster <- raster(full_path)
+  
+  # Dynamically assign the raster object to a variable with the name from var_names
+  assign(var_names[i], temp_raster)
+}
+
+
 # Read the GeoJSON file for cropbox
-
-# cropbox <- st_read("https://github.com/HotspotStoplight/HotspotStoplight/raw/main/CropBoxes/asdf_crop.geojson")
-
 cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop4.geojson")
-# cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop5b.geojson")
-
 # Crop5a is the largest cropbox that can be used for the land cover change prediction at 30m resolution on OA's Macbook
 # cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop5a.geojson")
 
-# Crop5 was the crop used for 60m resolution analysis on OA's Macbook
-# cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop5.geojson")
-
 # cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop6.geojson")
 
-# LAND COVER 2013
-url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/sanjose2013bespoke.tif"
-temp <- tempfile(fileext = ".tif")
-download.file(url, temp, method = "auto")
-lc_2013 <- raster(temp)
-
-# LAND COVER 2023
-url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/sanjose2023bespoke.tif"
-temp <- tempfile(fileext = ".tif")
-download.file(url, temp, method = "auto")
-lc_2023 <- raster(temp)
-
-# DISTANCE TO ROADS
-url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/roads_proximity.tif"
-temp <- tempfile(fileext = ".tif")
-download.file(url, temp, method = "auto")
-dist_road <- raster(temp)
-
-# DISTANCE TO HIGHWAYS
-url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/highway_proximity.tif"
-temp <- tempfile(fileext = ".tif")
-download.file(url, temp, method = "auto")
-dist_highway <- raster(temp)
-
-
-# POPULATION 2018
-url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/population2018.tif"
-temp <- tempfile(fileext = ".tif")
-download.file(url, temp, method = "auto")
-pop2018 <- raster(temp)
-
-# # POPULATION 2010
-# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/Pop_2010_Crop4.tif"
+# # Load files from github
+# # LAND COVER 2013
+# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/sanjose2013bespoke.tif"
 # temp <- tempfile(fileext = ".tif")
 # download.file(url, temp, method = "auto")
-# pop2010 <- raster(temp)
+# lc_2013 <- raster(temp)
 # 
-# # POPULATION 2020
-# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/Pop_2020_Crop4.tif"
+# # LAND COVER 2023
+# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/sanjose2023bespoke.tif"
 # temp <- tempfile(fileext = ".tif")
 # download.file(url, temp, method = "auto")
-# pop2020 <- raster(temp)
-
-# SLOPE
-url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/Slope.tif"
-temp <- tempfile(fileext = ".tif")
-download.file(url, temp, method = "auto")
-slope <- raster(temp)
-
-# DISTANCE TO URBAN LAND COVER
-url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/dist2urban.tif"
-temp <- tempfile(fileext = ".tif")
-download.file(url, temp, method = "auto")
-dist_urban <- raster(temp)
+# lc_2023 <- raster(temp)
+# 
+# # DISTANCE TO ROADS
+# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/roads_proximity.tif"
+# temp <- tempfile(fileext = ".tif")
+# download.file(url, temp, method = "auto")
+# dist_road <- raster(temp)
+# 
+# # DISTANCE TO HIGHWAYS
+# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/highway_proximity.tif"
+# temp <- tempfile(fileext = ".tif")
+# download.file(url, temp, method = "auto")
+# dist_highway <- raster(temp)
+# 
+# 
+# # POPULATION 2018
+# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/population2018.tif"
+# temp <- tempfile(fileext = ".tif")
+# download.file(url, temp, method = "auto")
+# pop2018 <- raster(temp)
+# 
+# # # POPULATION 2010
+# # url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/Pop_2010_Crop4.tif"
+# # temp <- tempfile(fileext = ".tif")
+# # download.file(url, temp, method = "auto")
+# # pop2010 <- raster(temp)
+# # 
+# # # POPULATION 2020
+# # url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/Pop_2020_Crop4.tif"
+# # temp <- tempfile(fileext = ".tif")
+# # download.file(url, temp, method = "auto")
+# # pop2020 <- raster(temp)
+# 
+# # SLOPE
+# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/Slope.tif"
+# temp <- tempfile(fileext = ".tif")
+# download.file(url, temp, method = "auto")
+# slope <- raster(temp)
+# 
+# # DISTANCE TO URBAN LAND COVER
+# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/dist2urban.tif"
+# temp <- tempfile(fileext = ".tif")
+# download.file(url, temp, method = "auto")
+# dist_urban <- raster(temp)
 
 
 ```
 ```{r}
-unique(lc_2013)
-unique(lc_2023)
-
-
+# extent(lc_2013)
+# extent(lc_2023)
 ```
+
 
 ```{r, echo=FALSE}
 # Project the rasters
@@ -141,7 +157,7 @@ unique(lc_2023)
 bbox <- st_bbox(cropbox)
 extent <- as(extent(bbox), "Extent")
 crs <- crs(cropbox)
-res <- resolution
+res <- resolution_degrees
 
 # Calculate the number of columns and rows based on the resolution and the extent
 nrows <- ceiling((extent@ymax - extent@ymin) / resolution_degrees)
@@ -151,18 +167,48 @@ ncols <- ceiling((extent@xmax - extent@xmin) / resolution_degrees)
 # Here, we manually specify xmn, xmx, ymn, ymx based on the extent object
 r <- raster(nrows=nrows, ncols=ncols, xmn=extent@xmin, xmx=extent@xmax, ymn=extent@ymin, ymx=extent@ymax, crs=crs)
 
-# Resample each raster to match the resolution of our empty raster
-lc_2013 <- resample(lc_2013, r, method = "ngb")
-lc_2023 <- resample(lc_2023, r, method = "ngb")
-# pop2010 <- resample(pop2010, r, method = "bilinear")
-pop2018 <- resample(pop2018, r, method = "bilinear")
-slope <- resample(slope, r, method = "bilinear")
-dist_urban <- resample(dist_urban, r, method = "bilinear")
-dist_road <- resample(dist_road, r, method = "bilinear")
-dist_highway <- resample(dist_highway, r, method = "bilinear")
+```
+# Resample Rasters
+```{r}
+# For categorical data, we use mode-based resampling
+# Define a custom function to calculate the mode
+modeFun <- function(x, ...) { 
+  ux <- unique(na.omit(x))
+  if (length(ux) == 0) return(NA)  # Handle case where all values are NA
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+processRaster <- function(raster, targetRaster) {
+  source_resolution <- res(raster)[1] # Assuming uniform resolution across dimensions
+  target_res <- res(targetRaster)[1] # Assuming uniform resolution for target raster
+  factor <- target_res / source_resolution
+  
+  # Only perform aggregation if factor > 1
+  if (factor > 1) {
+    aggregation_factor <- round(factor)
+    aggregated_raster <- aggregate(raster, fact=aggregation_factor, fun=modeFun)
+    cat("Aggregated raster resolution:", res(aggregated_raster), "\n")
+    return(aggregated_raster)
+  } else {
+    cat("No aggregation performed. Source resolution is coarser than or equal to the target resolution.\n")
+    return(raster)
+  }
+}
+
+# Process both rasters to match the resolution and extent of the created empty raster 'r'
+res_lc_2013 <- processRaster(lc_2013, r)
+res_lc_2023 <- processRaster(lc_2023, r)
+
 
 ```
 
+```{r}
+# For non-categorical data, we can use bilinear resampling
+pop2018 <- resample(pop2018, r, method = "bilinear")
+slope <- resample(slope, r, method = "bilinear")
+dist_road <- resample(dist_road, r, method = "bilinear")
+dist_highway <- resample(dist_highway, r, method = "bilinear")
+```
 
 
 ```{r, echo=FALSE}
@@ -171,19 +217,23 @@ lc_2013 <- crop(lc_2013, cropbox)
 lc_2023 <- crop(lc_2023, cropbox)
 dist_road <- crop(dist_road, cropbox)
 dist_highway <- crop(dist_highway, cropbox)
-pop2010 <- crop(pop2018, cropbox)
-# pop2010 <- crop(pop2010, cropbox)
-# pop2020 <- crop(pop2020, cropbox)
+pop2018 <- crop(pop2018, cropbox)
 slope <- crop(slope, cropbox)
-dist_urban <- crop(dist_urban, cropbox)
 ```
 
-Input Land Cover Raster Classification Schema (Tristan Grupp)
+Input Land Cover Raster Classification Schema (Tristan Grupp, old)
 0 - water 
 1 - non-forest
 2 - forest
 3 - no data
 4 - urban
+
+new
+1 - non-forest
+2 - forest
+3 - urban
+4 - water 
+0 - no data
 
 Target Land cover classification schema
 1 - forest
@@ -199,6 +249,12 @@ reclass_matrix <- matrix(c(0, 0, 4,  # Water to 4
                            3, 3, 1,  # No data to Forest (1)
                            4, 4, 3), # Urban to 3
                          ncol=3, byrow=TRUE)
+# reclass_matrix <- matrix(c(0, 0, 1,  # no data to 1 (forest)
+#                            1, 1, 2,  # Non-forest to 2 (non-forest)
+#                            2, 2, 1,  # Forest to 1 (forest)
+#                            3, 3, 3,  # Urban to 3 (urban)
+#                            4, 4, 4), # Water to 4 (water)
+#                          ncol=3, byrow=TRUE)
 
 # Function to reclassify a raster layer
 reclassify_raster <- function(raster_layer) {
@@ -209,16 +265,37 @@ lc_2023 <- reclassify_raster(lc_2023)
 ```
 
 ```{r}
+# Convert the reclassified raster to a binary layer where urban areas are 1 and others are 0
+# Assuming urban is represented by the value 3 based on your reclassification
+urban_binary <- lc_2013 == 3
+
+# Convert from RasterLayer (raster package) to SpatRaster (terra package)
+# Assuming `urban_binary` is your binary raster from the `raster` package
+urban_binary_terra <- rast(urban_binary)
+
+# Assuming urban areas are marked as 1 and non-urban areas are 0 in your urban_binary raster
+# Convert non-urban areas (0) to NA
+values(urban_binary_terra)[values(urban_binary_terra) == 0] <- NA
+
+# Calculate the distance to the nearest urban area (where value is not NA)
+urban_distance_terra <- terra::distance(urban_binary_terra)
+
+dist_urban <- raster(urban_distance_terra)
+```
+
+```{r}
 plot(lc_2013, col=viridis(100))
 plot(lc_2023, col=viridis(100))
 plot(pop2018, col=viridis(100))
-# plot(pop2010, col=viridis(100))
-# plot(pop2020, col=viridis(100))
 plot(dist_road, col=viridis(100))
 plot(dist_highway, col=viridis(100))
 plot(slope, col=viridis(100))
 plot(dist_urban, col=viridis(100))
 
+```
+```{r}
+ext(lc_2013)
+ext(lc_2023)
 ```
 
 ```{r}
@@ -236,11 +313,7 @@ for(i in 1:nlayers(LandCover)) {
 
 ```{r}
 # Set Directory
-setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop4_90m")
-# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop5_60m")
-# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop5a_30m")
-# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop_asdf_60m")
-# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop6_30m")
+setwd(outputs)
 
 save(LandCover, file = "LandCover.RData")
 save(Factors, file = "Factors.RData")

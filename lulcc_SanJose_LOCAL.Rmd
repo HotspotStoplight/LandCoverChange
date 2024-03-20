@@ -37,29 +37,39 @@ library(rasterVis)
 library(googleCloudStorageR)
 ```
 
+```{r}
+inputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop4_100m'
+
+outputs <- "/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop4_100m"
+# outputs <- "/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop5a_30m"
+```
+
 ### 1. Raster data preparation
 
 Land use change modelling requires a large amount of input data. The most important input is at least one map of observed land use. In lulcc, this data is represented by the `ObsLulcRasterStack` class:
 
 ```{r LoadAndPrep}
+# List all files in the directory
+files <- list.files(path = inputs, full.names = TRUE)
+
+# Filter for .RData files
+rdata_files <- files[grepl("\\.RData$", files)]
+
+# Load each .RData file
+lapply(rdata_files, load, .GlobalEnv)
+
+
 # # LandCover
+# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop4_90m/LandCover.RData"
+# # url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop5a_30m/LandCover.RData"
+# load(url(url))
+# 
+# # # Factors
+# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop4_90m/Factors.RData"
+# # url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop5a_30m/Factors.RData"
+# load(url(url))
 
-url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop4_90m/LandCover.RData"
-# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop_asdf_60m/LandCover.RData"
-# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop5_60m/LandCover.RData"
-# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop5a_30m/LandCover.RData"
-# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop6_30m/LandCover.RData"
-load(url(url))
-
-# # Factors
-url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop4_90m/Factors.RData"
-# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop_asdf_60m/Factors.RData"
-# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop5_60m/Factors.RData"
-# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop5a_30m/Factors.RData"
-# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop6_30m/Factors.RData"
-load(url(url))
-
-# Check the unique values again
+# Check the unique values
 for(i in 1:nlayers(LandCover)) {
   print(unique(values(LandCover[[i]])))}
 
@@ -169,12 +179,8 @@ rasterVis::levelplot(probmaps)
 ```
 # OUTPUT PROBABILITY RASTERS
 ```{r}
-# Set Working Directory
-setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/Crop4_90m")
-# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop_asdf_60m")
-# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/Crop5_60m")
-# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/Crop5a_30m")
-# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/Crop6_30m")
+# Set Working outputs
+setwd(outputs)
 
 # Loop through each band
 for (i in 1:nlayers(probmaps)) {
@@ -216,12 +222,8 @@ plot(list(glm=glm.perf,
 ```
 Export ROC Curves
 ```{r}
-# Set Working Directory
-setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop4_90m")
-# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop_asdf_60m")
-# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/Crop5_60m")
-# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/Crop5a_30m")
-# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/Crop6_30m")
+# Set Working outputs
+setwd(outputs)
 
 # Specify the file path and name, along with desired dimensions
 png("ROC_Curves.png", width = 1600, height = 900)
@@ -375,11 +377,8 @@ plot(clues.agr)
 
 Export Agreement Plot
 ```{r}
-# Set Working Directory
-setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop4_90m")
-# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/Crop5_60m")
-# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/Crop5a_30m")
-# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/Crop6_30m")
+# Set Working outputs
+setwd(outputs)
 
 # Specify the file path and name, along with desired dimensions
 png("Clue-S_AgreementBudget.png", width = 1600, height = 900)
@@ -483,12 +482,8 @@ levelplot(clues_output,
 
 # 5. Exporting Rasters 
 ```{r}
-# Set Working Directory
-setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop_4_90m")
-# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop5_60m")
-# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop5a_30m")
-# setwd("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop6_30m")
-
+# Set Working outputs
+setwd(outputs)
 
 # Extract the second band
 lc_2050 <- raster(clues_output, layer=2)
