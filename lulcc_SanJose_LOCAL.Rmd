@@ -38,8 +38,10 @@ library(googleCloudStorageR)
 ```
 
 ```{r}
+# inputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop6_30m'
 inputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop4_100m'
 
+# outputs <- "/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop6_30m"
 outputs <- "/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop4_100m"
 # outputs <- "/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop5a_30m"
 ```
@@ -230,7 +232,6 @@ png("ROC_Curves.png", width = 1600, height = 900)
 
 # Your plotting code
 plot(list(glm=glm.perf,
-          rpart=rpart.perf,
           rf=rf.perf))
 
 # Close the plotting device
@@ -465,7 +466,7 @@ clues.model <- allocate(clues.model)
 summary(obs)
 summary(ef)
 summary(dmd)
-summary(ordered.model)
+summary(clues.model)
 ```
 # Plot and Output Rasters
 Clue-S Model Test
