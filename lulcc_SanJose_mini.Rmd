@@ -49,11 +49,13 @@ Load Files Locally
 ```{r}
 # inputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop6_30m'
 # inputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop4_100m'
-inputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop5c_30m'
+# inputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop5c_30m'
+inputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop5c_60m'
 
 # outputs <- "/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop6_30m"
 # outputs <- "/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop4_100m"
-outputs <- "/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop5c_30m"
+# outputs <- "/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop5c_30m"
+outputs <- "/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop5c_60m"
 
 # List all files in the directory
 files <- list.files(path = inputs, full.names = TRUE)
@@ -214,10 +216,10 @@ glm.pred <- PredictionList(models=glm.models,
 glm.perf <- PerformanceList(pred=glm.pred,
                             measure="rch")
 #RPART
-rpart.pred <- PredictionList(models=rpart.models,
-                             newdata=test.data)
-rpart.perf <- PerformanceList(pred=rpart.pred,
-                              measure="rch")
+# rpart.pred <- PredictionList(models=rpart.models,
+#                              newdata=test.data)
+# rpart.perf <- PerformanceList(pred=rpart.pred,
+#                               measure="rch")
 
 #Random Forest
 rf.pred <- PredictionList(models=rf.models,
@@ -238,7 +240,6 @@ png("ROC_Curves.png", width = 1600, height = 900)
 
 # Your plotting code
 plot(list(glm=glm.perf,
-          rpart=rpart.perf,
           rf=rf.perf))
 
 # Close the plotting device
@@ -326,7 +327,7 @@ ordered.model <- allocate(ordered.model, stochastic=TRUE)
 summary(obs)
 summary(ef)
 summary(dmd)
-summary(ordered.model)
+
 ```
 
 # Plot and Output Rasters
@@ -337,15 +338,19 @@ clues_output <- clues.model@output
 
 # Plotting with rasterVis
 levelplot(clues_output, 
-          col.regions=colorRampPalette(c("darkgreen", "tan", "red", "blue")), 
+          col.regions=colorRampPalette(c("darkgreen", "tan", "red", "blue")),
+          # col.regions=colorRampPalette(c("darkgreen", "tan", "red")),   
           main="Future Land Use Categories (CLUE-S)")
 
+num_layers <- nlayers(clues.model@output)
+print(num_layers)
 ```
 Ordered Model Test
-```{r}
+```{r, fig.width=10}
 # Step 1: Extract the raster data from the S4 object
 # Assuming the slot containing the raster data is named 'rasters'
-raster_data <- ordered.model@output
+lc_2013_ordered <- ordered.model@output[[1]]
+lc_2023_ordered <- ordered.model@output[[2]]
 
 # Step 2: Reclassify the raster data
 # Create a matrix specifying the reclassification rules
@@ -353,14 +358,16 @@ raster_data <- ordered.model@output
 reclass_matrix <- matrix(c(-1, -1, 1), ncol = 3, byrow = TRUE)
 
 # Use the reclassify function
-reclassified_raster <- reclassify(raster_data, reclass_matrix)
+lc_2023_ordered <- reclassify(lc_2023_ordered, reclass_matrix)
 
 # Step 3: Replace the original raster data in the S4 object with the reclassified version
-ordered.model@output <- reclassified_raster
+# ordered.model@output <- reclassified_raster
+
+unique(lc_2023_ordered)
 
 # Plotting with rasterVis
-levelplot(ordered.model@output,
-          col.regions=colorRampPalette(c("darkgreen", "tan", "red", "blue")),
+levelplot(lc_2013_ordered,
+          col.regions=colorRampPalette(c("darkgreen", "tan", "red")),
           main="Future Land Use Categories (Ordered)")
 ```
 
@@ -411,7 +418,7 @@ Clue-S Model
 Demand Estimation
 ```{r Demand}
 # set variable timewindow for extrapolating land cover change to 2050
-timewindow <- c(10,37)
+timewindow <- c(10,87)
 
 # obtain demand scenario from extrapolated land use change
 dmd <- approxExtrapDemand(obs=obs, tout=timewindow)
@@ -463,17 +470,16 @@ clues.model <- CluesModel(obs=obs,
 
 ```
 
-Then, finally, we can perform allocation:
-
+# Perform Allocation
 ```{r Allocation}
 clues.model <- allocate(clues.model)
 ```
 
 ```{r}
-summary(obs)
-summary(ef)
-summary(dmd)
-summary(clues.model)
+# summary(obs)
+# summary(ef)
+# summary(dmd)
+# summary(clues.model)
 ```
 # Plot and Output Rasters
 Clue-S Model Test
@@ -483,7 +489,7 @@ clues_output <- clues.model@output
 
 # Plotting with rasterVis
 levelplot(clues_output, 
-          col.regions=colorRampPalette(c("darkgreen", "tan", "red", "blue")), 
+          col.regions=colorRampPalette(c("darkgreen", "tan", "red")), 
           main="Future Land Use Categories (CLUE-S)")
 
 ```
@@ -507,5 +513,6 @@ writeRaster(lc_2023_raster, filename="lc_2023.tif", format="GTiff", overwrite=TR
 ```{r}
 plot(lc_2023_raster)
 plot(lc_2050)
+
 ```
 
