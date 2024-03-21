@@ -34,22 +34,34 @@ start_time <- Sys.time()
 coordinate_system <- 4326
 
 # Target resolution in m
-# resolution_meters <- 30
-resolution_meters <- 100
+resolution_meters <- 30
+# resolution_meters <- 100
 # Conversion to degrees
 resolution_degrees <- resolution_meters / (30*3600)
+
+# Read the GeoJSON file for cropbox
+# cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop4.geojson")
+# Crop5a is the largest cropbox that can be used for the land cover change prediction at 30m resolution on OA's Macbook
+# cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop5a.geojson")
+cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop5c.geojson")
+# cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop6.geojson")
+
+
 
 ```
 
 ```{r, echo=FALSE}
+
+outputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop5c_30m'
 # outputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop6_30m'
-outputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop4_100m'
+# outputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop4_100m'
 
 # Base directory
 inputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/'
 
 # List of file names
-filenames <- c('sanjose2013bespoke.tif', 'sanjose2023bespoke.tif', 'roads_proximity.tif', 'highway_proximity.tif', 'population2018.tif', 'Slope.tif', 'dist2urban.tif')
+filenames <- c('sanjose2013bespoke_updatedFandNF_march20.tif', 'sanjose2023bespoke_updatedFandNF_march20.tif', 'roads_proximity.tif', 'highway_proximity.tif', 'population2018.tif', 'Slope.tif', 'dist2urban.tif')
+# filenames <- c('sanjose2013bespoke.tif', 'sanjose2023bespoke.tif', 'roads_proximity.tif', 'highway_proximity.tif', 'population2018.tif', 'Slope.tif', 'dist2urban.tif')
 
 # List of desired variable names corresponding to each file
 var_names <- c('lc_2013', 'lc_2023', 'dist_road', 'dist_highway', 'pop2018', 'slope', 'dist_urban')
@@ -65,14 +77,6 @@ for (i in 1:length(filenames)) {
   # Dynamically assign the raster object to a variable with the name from var_names
   assign(var_names[i], temp_raster)
 }
-
-
-# Read the GeoJSON file for cropbox
-cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop4.geojson")
-# Crop5a is the largest cropbox that can be used for the land cover change prediction at 30m resolution on OA's Macbook
-# cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop5a.geojson")
-
-# cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotStoplight/main/CropBoxes/CR_Crop6.geojson")
 
 # # Load files from github
 # # LAND COVER 2013
@@ -178,27 +182,31 @@ modeFun <- function(x, ...) {
   ux[which.max(tabulate(match(x, ux)))]
 }
 
-processRaster <- function(raster, targetRaster) {
-  source_resolution <- res(raster)[1] # Assuming uniform resolution across dimensions
-  target_res <- res(targetRaster)[1] # Assuming uniform resolution for target raster
-  factor <- target_res / source_resolution
-  
-  # Only perform aggregation if factor > 1
-  if (factor > 1) {
-    aggregation_factor <- round(factor)
-    aggregated_raster <- aggregate(raster, fact=aggregation_factor, fun=modeFun)
-    cat("Aggregated raster resolution:", res(aggregated_raster), "\n")
-    return(aggregated_raster)
+processRaster <- function(sourceRaster, targetRaster) {
+  # Ensure alignment to the target raster's grid, regardless of aggregation
+  if (res(sourceRaster)[1] != res(targetRaster)[1]) {
+    # Perform aggregation or disaggregation as necessary
+    factor <- res(targetRaster)[1] / res(sourceRaster)[1]
+    if (factor > 1) {
+      # Aggregate using custom mode function
+      aggregatedRaster <- aggregate(sourceRaster, fact=round(factor), fun=modeFun)
+      cat("Aggregated raster resolution:", res(aggregatedRaster), "\n")
+      resampledRaster <- projectRaster(aggregatedRaster, targetRaster, method="ngb")
+    } else {
+      # Disaggregation (higher resolution) - use resampling
+      resampledRaster <- resample(sourceRaster, targetRaster, method="ngb")
+    }
   } else {
-    cat("No aggregation performed. Source resolution is coarser than or equal to the target resolution.\n")
-    return(raster)
+    # Directly align to target raster without changing resolution
+    resampledRaster <- projectRaster(sourceRaster, targetRaster, method="ngb")
   }
+  return(resampledRaster)
 }
 
-# Process both rasters to match the resolution and extent of the created empty raster 'r'
-res_lc_2013 <- processRaster(lc_2013, r)
-res_lc_2023 <- processRaster(lc_2023, r)
 
+# Process both rasters to match the resolution and extent of the created empty raster 'r'
+lc_2013 <- processRaster(lc_2013, r)
+lc_2023 <- processRaster(lc_2023, r)
 
 ```
 
@@ -296,7 +304,13 @@ plot(dist_urban, col=viridis(100))
 ```{r}
 ext(lc_2013)
 ext(lc_2023)
+ext(pop2018)
+ext(dist_road)
+ext(dist_highway)
+ext(slope)
+ext(dist_urban)
 ```
+
 
 ```{r}
 # Make RasterStacks

@@ -9,6 +9,8 @@ knitr::opts_chunk$set(
   fig.path = "man/figures/README-",
   out.width = "100%"
 )
+rm(list=ls())
+
 ```
 
 lulcc provides a framework for spatially explicit land use change modelling in r. The long term goal of lulcc is to  provide a smart and tidy interface to running the standard land use change modelling in 4 steps: raster data prepping, probability surface generation, allocation and validation, in one tidy package.
@@ -37,20 +39,22 @@ library(rasterVis)
 library(googleCloudStorageR)
 ```
 
-```{r}
-# inputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop6_30m'
-inputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop4_100m'
 
-# outputs <- "/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop6_30m"
-outputs <- "/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop4_100m"
-# outputs <- "/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop5a_30m"
-```
 
 ### 1. Raster data preparation
 
 Land use change modelling requires a large amount of input data. The most important input is at least one map of observed land use. In lulcc, this data is represented by the `ObsLulcRasterStack` class:
 
-```{r LoadAndPrep}
+Load Files Locally
+```{r}
+# inputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop6_30m'
+# inputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop4_100m'
+inputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop5c_30m'
+
+# outputs <- "/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop6_30m"
+# outputs <- "/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop4_100m"
+outputs <- "/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop5c_30m"
+
 # List all files in the directory
 files <- list.files(path = inputs, full.names = TRUE)
 
@@ -59,8 +63,10 @@ rdata_files <- files[grepl("\\.RData$", files)]
 
 # Load each .RData file
 lapply(rdata_files, load, .GlobalEnv)
+```
 
-
+Load Files Remotely
+```{r LoadAndPrep}
 # # LandCover
 # url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop4_90m/LandCover.RData"
 # # url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop5a_30m/LandCover.RData"
@@ -71,10 +77,10 @@ lapply(rdata_files, load, .GlobalEnv)
 # # url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop5a_30m/Factors.RData"
 # load(url(url))
 
-# Check the unique values
-for(i in 1:nlayers(LandCover)) {
-  print(unique(values(LandCover[[i]])))}
+```
 
+Define Obs Variable
+```{r}
 obs <- ObsLulcRasterStack(x=LandCover,
                           pattern="lc",
                           categories=c(1,2,3,4),
@@ -208,10 +214,10 @@ glm.pred <- PredictionList(models=glm.models,
 glm.perf <- PerformanceList(pred=glm.pred,
                             measure="rch")
 #RPART
-# rpart.pred <- PredictionList(models=rpart.models,
-#                              newdata=test.data)
-# rpart.perf <- PerformanceList(pred=rpart.pred,
-#                               measure="rch")
+rpart.pred <- PredictionList(models=rpart.models,
+                             newdata=test.data)
+rpart.perf <- PerformanceList(pred=rpart.pred,
+                              measure="rch")
 
 #Random Forest
 rf.pred <- PredictionList(models=rf.models,
@@ -232,6 +238,7 @@ png("ROC_Curves.png", width = 1600, height = 900)
 
 # Your plotting code
 plot(list(glm=glm.perf,
+          rpart=rpart.perf,
           rf=rf.perf))
 
 # Close the plotting device
@@ -265,7 +272,7 @@ While many complex methods have been devised, in lulcc we simply provide a metho
 timewindow <- c(0,10)
 
 # obtain demand scenario from extrapolated land use change
-dmd <- approxExtrapDemand(obs=obs, tout=timewindow)
+dmd <- approxExtrapDemand(obs=obs, t=timewindow)
 dmd
 ```
 
@@ -336,25 +343,25 @@ levelplot(clues_output,
 ```
 Ordered Model Test
 ```{r}
-# # Step 1: Extract the raster data from the S4 object
-# # Assuming the slot containing the raster data is named 'rasters'
-# raster_data <- ordered.model@output
-# 
-# # Step 2: Reclassify the raster data
-# # Create a matrix specifying the reclassification rules
-# # Here, rows are of the form c(from, to, becomes), and you can add more rows as needed
-# reclass_matrix <- matrix(c(-1, -1, 1), ncol = 3, byrow = TRUE)
-# 
-# # Use the reclassify function
-# reclassified_raster <- reclassify(raster_data, reclass_matrix)
-# 
-# # Step 3: Replace the original raster data in the S4 object with the reclassified version
-# ordered.model@output <- reclassified_raster
-# 
-# # Plotting with rasterVis
-# levelplot(ordered.model@output,
-#           col.regions=colorRampPalette(c("darkgreen", "tan", "red", "blue")),
-#           main="Future Land Use Categories (Ordered)")
+# Step 1: Extract the raster data from the S4 object
+# Assuming the slot containing the raster data is named 'rasters'
+raster_data <- ordered.model@output
+
+# Step 2: Reclassify the raster data
+# Create a matrix specifying the reclassification rules
+# Here, rows are of the form c(from, to, becomes), and you can add more rows as needed
+reclass_matrix <- matrix(c(-1, -1, 1), ncol = 3, byrow = TRUE)
+
+# Use the reclassify function
+reclassified_raster <- reclassify(raster_data, reclass_matrix)
+
+# Step 3: Replace the original raster data in the S4 object with the reclassified version
+ordered.model@output <- reclassified_raster
+
+# Plotting with rasterVis
+levelplot(ordered.model@output,
+          col.regions=colorRampPalette(c("darkgreen", "tan", "red", "blue")),
+          main="Future Land Use Categories (Ordered)")
 ```
 
 
