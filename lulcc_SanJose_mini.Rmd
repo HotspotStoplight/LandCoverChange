@@ -316,18 +316,10 @@ ordered.model <- OrderedModel(obs=obs,
                               order=c(3,2,1,4))
 ```
 
-Then, finally, we can perform allocation:
-
+Allocate demand to the models
 ```{r Allocation}
 clues.model <- allocate(clues.model)
 ordered.model <- allocate(ordered.model, stochastic=TRUE)
-```
-
-```{r}
-summary(obs)
-summary(ef)
-summary(dmd)
-
 ```
 
 # Plot and Output Rasters
@@ -367,7 +359,7 @@ unique(lc_2023_ordered)
 
 # Plotting with rasterVis
 levelplot(lc_2013_ordered,
-          col.regions=colorRampPalette(c("darkgreen", "tan", "red")),
+          col.regions=colorRampPalette(c("darkgreen", "tan", "red", "blue")),
           main="Future Land Use Categories (Ordered)")
 ```
 
@@ -411,13 +403,12 @@ plot(clues.fom, from=1, to=2)
 plot(clues.fom, from=1, to=3)
 plot(clues.fom, from=2, to=3)
 ```
-
 ### 4. Extrapolation
 Clue-S Model
 <br>
 Demand Estimation
 ```{r Demand}
-# set variable timewindow for extrapolating land cover change to 2050
+# set variable timewindow for extrapolating land cover change to 2100
 timewindow <- c(10,87)
 
 # obtain demand scenario from extrapolated land use change
@@ -489,7 +480,7 @@ clues_output <- clues.model@output
 
 # Plotting with rasterVis
 levelplot(clues_output, 
-          col.regions=colorRampPalette(c("darkgreen", "tan", "red")), 
+          col.regions=colorRampPalette(c("darkgreen", "tan", "red", "blue")), 
           main="Future Land Use Categories (CLUE-S)")
 
 ```
