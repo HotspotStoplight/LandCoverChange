@@ -328,6 +328,9 @@ Clue-S Model Test
 # Assuming 'clues.model' is your CluesModel object
 clues_output <- clues.model@output
 
+clues_output_2013 <- ordered.model@output[[1]]
+clues_output_2023 <- ordered.model@output[[2]]
+
 # Plotting with rasterVis
 levelplot(clues_output, 
           col.regions=colorRampPalette(c("darkgreen", "tan", "red", "blue")),
@@ -339,28 +342,44 @@ print(num_layers)
 ```
 Ordered Model Test
 ```{r, fig.width=10}
-# Step 1: Extract the raster data from the S4 object
-# Assuming the slot containing the raster data is named 'rasters'
-lc_2013_ordered <- ordered.model@output[[1]]
-lc_2023_ordered <- ordered.model@output[[2]]
+library(raster)
 
-# Step 2: Reclassify the raster data
-# Create a matrix specifying the reclassification rules
-# Here, rows are of the form c(from, to, becomes), and you can add more rows as needed
-reclass_matrix <- matrix(c(-1, -1, 1), ncol = 3, byrow = TRUE)
+# Check if ordered.model@output is a list and contains raster objects
+if("list" %in% class(ordered.model@output) && all(sapply(ordered.model@output, function(x) inherits(x, "Raster")))) {
+  for(i in seq_along(ordered.model@output)) {
+    # Attempt to safely modify the raster values
+    try({
+      current_raster <- ordered.model@output[[i]]
+      # Ensure the object is a RasterLayer
+      if(inherits(current_raster, "RasterLayer")) {
+        # Manually reassign values
+        values(current_raster)[values(current_raster) == -1] <- 1
+        ordered.model@output[[i]] <- current_raster
+      }
+    }, silent = TRUE)
+  }
+} else {
+  message("The ordered.model@output does not contain a modifiable list of Raster objects.")
+}
 
-# Use the reclassify function
-lc_2023_ordered <- reclassify(lc_2023_ordered, reclass_matrix)
 
-# Step 3: Replace the original raster data in the S4 object with the reclassified version
-# ordered.model@output <- reclassified_raster
+# # Plotting with rasterVis
+# levelplot(ordered.model@output,
+#           col.regions=colorRampPalette(c("darkgreen", "tan", "red", "blue")),
+#           main="Land Use Categories (Random Forest ModelOrdered)")
 
-unique(lc_2023_ordered)
+# Generate individual plots with specific titles
+plot1 <- levelplot(ordered.model@output[[1]], 
+                   col.regions=colorRampPalette(c("darkgreen", "tan", "red", "blue")),
+                   main="2013 Land Cover")
 
-# Plotting with rasterVis
-levelplot(lc_2013_ordered,
-          col.regions=colorRampPalette(c("darkgreen", "tan", "red", "blue")),
-          main="Future Land Use Categories (Ordered)")
+plot2 <- levelplot(ordered.model@output[[2]], 
+                   col.regions=colorRampPalette(c("darkgreen", "tan", "red", "blue")),
+                   main="2023 Land Cover")
+
+# Arrange the plots together
+grid.arrange(plot1, plot2, ncol=1)
+
 ```
 
 
@@ -371,7 +390,11 @@ An important yet frequently overlooked aspect of land use change modelling is mo
 ```{r Threemap}
 # evaluate CLUE-S model output
 clues.tabs <- ThreeMapComparison(x=clues.model,
-                                   factors=2^(1:8),
+                                   factors=c(1, 2, 4),
+                                   timestep=10)
+
+ordered.tabs <- ThreeMapComparison(x=ordered.model,
+                                   factors=c(1, 2, 4),
                                    timestep=10)
 ```
 
@@ -380,6 +403,9 @@ Agreement Plot
 ```{r AgreementBudget, echo=TRUE}
 clues.agr <- AgreementBudget(x=clues.tabs)
 plot(clues.agr)
+
+ordered.agr <- AgreementBudget(x=ordered.tabs)
+plot(ordered.agr)
 ```
 
 Export Agreement Plot
@@ -389,10 +415,15 @@ setwd(outputs)
 
 # Specify the file path and name, along with desired dimensions
 png("Clue-S_AgreementBudget.png", width = 1600, height = 900)
-
 # Your plotting code
 plot(clues.agr)
+# Close the plotting device
+dev.off()
 
+# Specify the file path and name, along with desired dimensions
+png("Ordered_AgreementBudget.png", width = 1600, height = 900)
+# Your plotting code
+plot(ordered.agr)
 # Close the plotting device
 dev.off()
 ```
@@ -402,6 +433,11 @@ clues.fom <- FigureOfMerit(x=clues.agr)
 plot(clues.fom, from=1, to=2)
 plot(clues.fom, from=1, to=3)
 plot(clues.fom, from=2, to=3)
+
+ordered.fom <- FigureOfMerit(x=ordered.agr)
+plot(ordered.fom, from=1, to=2)
+plot(ordered.fom, from=1, to=3)
+plot(ordered.fom, from=2, to=3)
 ```
 ### 4. Extrapolation
 Clue-S Model
@@ -409,10 +445,10 @@ Clue-S Model
 Demand Estimation
 ```{r Demand}
 # set variable timewindow for extrapolating land cover change to 2100
-timewindow <- c(10,87)
+timewindow <- c(0,10,37)
 
 # obtain demand scenario from extrapolated land use change
-dmd <- approxExtrapDemand(obs=obs, tout=timewindow)
+dmd <- approxExtrapDemand(obs=obs, t=timewindow)
 dmd
 ```
 
