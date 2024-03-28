@@ -34,7 +34,8 @@ start_time <- Sys.time()
 coordinate_system <- 4326
 
 # Target resolution in m
-resolution_meters <- 30
+# resolution_meters <- 30
+resolution_meters <- 60
 # resolution_meters <- 100
 # Conversion to degrees
 resolution_degrees <- resolution_meters / (30*3600)
@@ -52,7 +53,8 @@ cropbox <- st_read("https://raw.githubusercontent.com/HotspotStoplight/HotspotSt
 
 ```{r, echo=FALSE}
 
-outputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop5c_30m'
+outputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop5c_60m'
+# outputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop5c_30m'
 # outputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop6_30m'
 # outputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop4_100m'
 
