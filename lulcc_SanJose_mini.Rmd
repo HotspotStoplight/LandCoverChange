@@ -439,7 +439,7 @@ plot(ordered.fom, from=2, to=3)
 Clue-S Model
 <br>
 Demand Estimation
-```{r Demand}
+```{r Demand extrapolation}
 # set variable timewindow for extrapolating land cover change to 2100
 timewindow <- c(0,10,37)
 
@@ -449,7 +449,7 @@ dmd
 ```
 
 Manually-assign demand (scenario-based modeling)
-```{r Demand alternate}
+```{r Demandalternate}
 # # Example demand data for timesteps 0 and 10
 # dmd <- data.frame(
 #   timestep = c(0, 10),
