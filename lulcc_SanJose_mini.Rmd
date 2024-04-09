@@ -47,15 +47,11 @@ Land use change modelling requires a large amount of input data. The most import
 
 Load Files Locally
 ```{r}
-# inputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop6_30m'
-# inputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop4_100m'
-# inputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop5c_30m'
-inputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop5c_60m'
+# inputs <- './data/inputs/cropped/crop5c_30m'
+inputs <- './data/inputs/cropped/crop6_30m'
 
-# outputs <- "/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop6_30m"
-# outputs <- "/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop4_100m"
-# outputs <- "/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop5c_30m"
-outputs <- "/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop5c_60m"
+# outputs <- "./data/outputs/cropped/crop5c_30m"
+outputs <- "./data/outputs/cropped/crop6_30m"
 
 # List all files in the directory
 files <- list.files(path = inputs, full.names = TRUE)
