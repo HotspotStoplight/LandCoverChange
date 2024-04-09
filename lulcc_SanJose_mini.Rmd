@@ -449,7 +449,7 @@ dmd
 ```
 
 Manually-assign demand (scenario-based modeling)
-```{r Demandalternate}
+```{r manual demand}
 # # Example demand data for timesteps 0 and 10
 # dmd <- data.frame(
 #   timestep = c(0, 10),
@@ -461,7 +461,7 @@ Manually-assign demand (scenario-based modeling)
 ```
 
 Gather neighbor data from the land use change data.
-```{r Neigh}
+```{r NeighborData}
 w <- matrix(data=1, nrow=3, ncol=3)
 nb <- NeighbRasterStack(x=obs[[1]], weights=w,
                         categories=c(1,2,3,4))
@@ -470,7 +470,7 @@ histRaster <- obs[[1]]  # This extracts the first layer as a RasterLayer
 
 The culmination of the modelling process is to simulate the location of land use change. lulcc provides a routine based on the CLUE-S model (Verburg et al., 2002) and a novel stochastic allocation procedure (with option for using the ordered method). The first step is to combine the various model inputs to ensure they are compatible:
 
-```{r CLUES}
+```{r CLUES allocation}
 clues.rules <- matrix(data=1, nrow=4, ncol=4)
 
 clues.parms <- list(jitter.f=0.0002,
@@ -491,10 +491,6 @@ clues.model <- CluesModel(obs=obs,
                           rules=clues.rules,
                           params=clues.parms)
 
-```
-
-# Perform Allocation
-```{r Allocation}
 clues.model <- allocate(clues.model)
 ```
 
