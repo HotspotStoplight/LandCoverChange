@@ -40,6 +40,9 @@ library(googleCloudStorageR)
 ```
 
 
+```{r}
+gcs_auth("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/keys/hotspotstoplight-bfe39b177acf.json")
+```
 
 ### 1. Raster data preparation
 
@@ -47,37 +50,21 @@ Land use change modelling requires a large amount of input data. The most import
 
 Load Files Locally
 ```{r}
-# inputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop6_30m'
-# inputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop4_100m'
-# inputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop5c_30m'
-inputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop5c_60m'
+inputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop6_30m'
 
-# outputs <- "/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop6_30m"
-# outputs <- "/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop4_100m"
-# outputs <- "/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop5c_30m"
-outputs <- "/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop5c_60m"
+outputs <- "/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop6_30m"
 
-# List all files in the directory
-files <- list.files(path = inputs, full.names = TRUE)
-
-# Filter for .RData files
-rdata_files <- files[grepl("\\.RData$", files)]
-
-# Load each .RData file
-lapply(rdata_files, load, .GlobalEnv)
 ```
 
 Load Files Remotely
 ```{r LoadAndPrep}
-# # LandCover
-# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop4_90m/LandCover.RData"
-# # url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop5a_30m/LandCover.RData"
-# load(url(url))
-# 
-# # # Factors
-# url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop4_90m/Factors.RData"
-# # url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop5a_30m/Factors.RData"
-# load(url(url))
+# LandCover
+url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop6_30m/LandCover.RData"
+load(url(url))
+
+# # Factors
+url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop6_30m/Factors.RData"
+load(url(url))
 
 ```
 
@@ -97,13 +84,13 @@ obs <- ObsLulcRasterStack(x=LandCover,
 lc_2013_raster <- raster(obs, layer=1)
 lc_2023_raster <- raster(obs, layer=2)
 
-# Plot the first time point
-plot(lc_2013_raster, main="Land Cover 2013", col=c('darkgreen', 'tan', 'red', 'blue'), breaks=c(0.5, 1.5, 2.5, 3.5, 4.5), legend=FALSE)
-legend("topright", legend=c('Forest', 'Other', 'Built', 'Water'), fill=c('darkgreen', 'tan', 'red', 'blue'))
-
-# Plot the second time point
-plot(lc_2023_raster, main="Land Cover 2023", col=c('darkgreen', 'tan', 'red', 'blue'), breaks=c(0.5, 1.5, 2.5, 3.5, 4.5), legend=FALSE)
-legend("topright", legend=c('Forest', 'Other', 'Built', 'Water'), fill=c('darkgreen', 'tan', 'red', 'blue'))
+# # Plot the first time point
+# plot(lc_2013_raster, main="Land Cover 2013", col=c('darkgreen', 'tan', 'red', 'blue'), breaks=c(0.5, 1.5, 2.5, 3.5, 4.5), legend=FALSE)
+# legend("topright", legend=c('Forest', 'Other', 'Built', 'Water'), fill=c('darkgreen', 'tan', 'red', 'blue'))
+# 
+# # Plot the second time point
+# plot(lc_2023_raster, main="Land Cover 2023", col=c('darkgreen', 'tan', 'red', 'blue'), breaks=c(0.5, 1.5, 2.5, 3.5, 4.5), legend=FALSE)
+# legend("topright", legend=c('Forest', 'Other', 'Built', 'Water'), fill=c('darkgreen', 'tan', 'red', 'blue'))
 
 ```
 
@@ -185,12 +172,12 @@ points <- rasterToPoints(obs[[1]], spatial=TRUE)
 probmaps <- SpatialPointsDataFrame(points, probmaps)
 probmaps <- rasterize(x=probmaps, y=obs[[1]],
                       field=names(probmaps))
-rasterVis::levelplot(probmaps)
+# rasterVis::levelplot(probmaps)
 ```
 # OUTPUT PROBABILITY RASTERS
 ```{r}
-# Set Working outputs
-setwd(outputs)
+# Your Google Cloud Storage Bucket name
+bucket_name <- "your-bucket-name"
 
 # Loop through each band
 for (i in 1:nlayers(probmaps)) {
@@ -200,8 +187,18 @@ for (i in 1:nlayers(probmaps)) {
   # Create a filename from the band's name
   filename <- paste0(names(single_band), ".tif")
 
-  # Write the single band raster to a TIFF file
-  writeRaster(single_band, filename, format = "GTiff", overwrite = TRUE)
+  # Write the single band raster to a temporary TIFF file
+  temp_file <- tempfile(fileext = ".tif")
+  writeRaster(single_band, temp_file, format = "GTiff", overwrite = TRUE)
+  
+  # Upload the file to Google Cloud Storage
+  gcs_upload(local_file = temp_file,
+             bucket = bucket_name,
+             name = filename, 
+             predefinedAcl = "publicRead") # Adjust the ACL as needed
+  
+  # Optionally, delete the temporary file if you want to clean up the local storage
+  unlink(temp_file)
 }
 
 ```
@@ -227,8 +224,8 @@ rf.pred <- PredictionList(models=rf.models,
 rf.perf <- PerformanceList(pred=rf.pred,
                            measure="rch")
 #Plot ROC Curves
-plot(list(glm=glm.perf,
-          rf=rf.perf))
+# plot(list(glm=glm.perf,
+#           rf=rf.perf))
 ```
 Export ROC Curves
 ```{r}
@@ -368,17 +365,17 @@ if("list" %in% class(ordered.model@output) && all(sapply(ordered.model@output, f
 #           col.regions=colorRampPalette(c("darkgreen", "tan", "red", "blue")),
 #           main="Land Use Categories (Random Forest ModelOrdered)")
 
-# Generate individual plots with specific titles
-plot1 <- levelplot(ordered.model@output[[1]], 
-                   col.regions=colorRampPalette(c("darkgreen", "tan", "red", "blue")),
-                   main="2013 Land Cover")
-
-plot2 <- levelplot(ordered.model@output[[2]], 
-                   col.regions=colorRampPalette(c("darkgreen", "tan", "red", "blue")),
-                   main="2023 Land Cover")
-
-# Arrange the plots together
-grid.arrange(plot1, plot2, ncol=1)
+# # Generate individual plots with specific titles
+# plot1 <- levelplot(ordered.model@output[[1]], 
+#                    col.regions=colorRampPalette(c("darkgreen", "tan", "red", "blue")),
+#                    main="2013 Land Cover")
+# 
+# plot2 <- levelplot(ordered.model@output[[2]], 
+#                    col.regions=colorRampPalette(c("darkgreen", "tan", "red", "blue")),
+#                    main="2023 Land Cover")
+# 
+# # Arrange the plots together
+# grid.arrange(plot1, plot2, ncol=1)
 
 ```
 
