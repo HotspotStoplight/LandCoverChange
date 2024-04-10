@@ -50,9 +50,9 @@ Land use change modelling requires a large amount of input data. The most import
 
 Load Files Locally
 ```{r}
-inputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop6_30m'
+inputs <- './data/inputs/cropped/crop6_30m'
 
-outputs <- "/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop6_30m"
+outputs <- "./data/outputs/cropped/crop6_30m"
 
 ```
 
