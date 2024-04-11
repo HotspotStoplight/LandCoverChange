@@ -32,11 +32,11 @@ And the development version from [GitHub](https://github.com/) with:
 ## The lulcc workflow
 *Adapted from https://www.geosci-model-dev.net/8/3215/2015/*
 
-```{r}
+```{r LoadLibraries}
 library(lulcc)
 library(raster)
 library(rasterVis)
-library(googleCloudStorageR)
+# library(googleCloudStorageR)
 ```
 
 
@@ -46,16 +46,12 @@ library(googleCloudStorageR)
 Land use change modelling requires a large amount of input data. The most important input is at least one map of observed land use. In lulcc, this data is represented by the `ObsLulcRasterStack` class:
 
 Load Files Locally
-```{r}
-# inputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop6_30m'
-# inputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop4_100m'
-# inputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop5c_30m'
-inputs <- '/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/inputs/cropped/crop5c_60m'
+```{r LoadAndPrep}
+# inputs <- './data/inputs/cropped/crop5c_30m'
+inputs <- './data/inputs/cropped/crop6_30m'
 
-# outputs <- "/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop6_30m"
-# outputs <- "/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop4_100m"
-# outputs <- "/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop5c_30m"
-outputs <- "/Users/oliveratwood/Documents/GitHub/HotspotStoplight/LandCoverChange/data/outputs/cropped/crop5c_60m"
+# outputs <- "./data/outputs/cropped/crop5c_30m"
+outputs <- "./data/outputs/cropped/crop6_30m"
 
 # List all files in the directory
 files <- list.files(path = inputs, full.names = TRUE)
@@ -67,8 +63,7 @@ rdata_files <- files[grepl("\\.RData$", files)]
 lapply(rdata_files, load, .GlobalEnv)
 ```
 
-Load Files Remotely
-```{r LoadAndPrep}
+```{r LoadAndPrep from GitHub}
 # # LandCover
 # url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop4_90m/LandCover.RData"
 # # url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop5a_30m/LandCover.RData"
@@ -82,7 +77,7 @@ Load Files Remotely
 ```
 
 Define Obs Variable
-```{r}
+```{r DefineObsVariable}
 obs <- ObsLulcRasterStack(x=LandCover,
                           pattern="lc",
                           categories=c(1,2,3,4),
@@ -91,7 +86,7 @@ obs <- ObsLulcRasterStack(x=LandCover,
 ```
 
 
-```{r, fig.width=12, fig.height=6.75}
+```{r PlotLandCoverRasters, fig.width=12, fig.height=6.75}
 # Assuming your ObsLulcRasterStack 'obs' is compatible with raster plotting
 # Extract layers by time points (assuming two time points for simplicity)
 lc_2013_raster <- raster(obs, layer=1)
@@ -109,7 +104,7 @@ legend("topright", legend=c('Forest', 'Other', 'Built', 'Water'), fill=c('darkgr
 
 A useful starting point in land use change modelling is to obtain a transition matrix for two observed land use maps to identify the main transitions. This can be achieved with the `crossTabulate` function:
 
-```{r CrossTab, echo=TRUE}
+```{r CrossTabulate, echo=TRUE}
 # obtain a transition matrix from land use maps for 1985 and 1991
 crossTabulate(obs, times=c(0,10))
 ```
@@ -188,7 +183,7 @@ probmaps <- rasterize(x=probmaps, y=obs[[1]],
 rasterVis::levelplot(probmaps)
 ```
 # OUTPUT PROBABILITY RASTERS
-```{r}
+```{r OutputProbabilityRasters}
 # Set Working outputs
 setwd(outputs)
 
@@ -231,7 +226,7 @@ plot(list(glm=glm.perf,
           rf=rf.perf))
 ```
 Export ROC Curves
-```{r}
+```{r ROC_Curves}
 # Set Working outputs
 setwd(outputs)
 
@@ -248,7 +243,7 @@ dev.off()
 
 Another use of ROC analysis is to assess how well the models predict the cells in which gain occurs between two time points. This is only possible if a second observed land use map is available for a subsequent time point. Here we perform this type of analysis for the gain of built between 1985 and 1991. First, we create a data partition in which cells not candidate for gain (cells belonging to built in 1985) are eliminated. We then assess the ability of the various predictive models to predict the gain of built in this partition:
 
-```{r PerformancesTest}
+```{r PerformanceTest}
 # part <- rasterToPoints (obs[[1]],
 #                         fun=function(x) x != 2,
 #                         spatial=TRUE)
@@ -268,7 +263,7 @@ Another use of ROC analysis is to assess how well the models predict the cells i
 Spatially explicit land use change models are usually driven by non-spatial estimates of land use area for each timestep in the simulation.
 While many complex methods have been devised, in lulcc we simply provide a method for linear extrapolation of land use change, which relies on there being at least two observed land use maps:
 
-```{r Demand}
+```{r DemandTest}
 # set variable timewindow for testing
 timewindow <- c(0,10)
 
@@ -278,7 +273,7 @@ dmd
 ```
 
 We then use a filter defined as a matrix within the `NeighbRasterStack` function to gather neighbor data from the land use change data.
-```{r Neigh}
+```{r NeighborModelTest}
 w <- matrix(data=1, nrow=3, ncol=3)
 nb <- NeighbRasterStack(x=obs[[1]], weights=w,
                         categories=c(1,2,3,4))
@@ -287,7 +282,7 @@ histRaster <- obs[[1]]  # This extracts the first layer as a RasterLayer
 
 The culmination of the modelling process is to simulate the location of land use change. lulcc provides a routine based on the CLUE-S model (Verburg et al., 2002) and a novel stochastic allocation procedure (with option for using the ordered method). The first step is to combine the various model inputs to ensure they are compatible:
 
-```{r CLUES}
+```{r CLUESModelTest}
 clues.rules <- matrix(data=1, nrow=4, ncol=4)
 
 clues.parms <- list(jitter.f=0.0002,
@@ -317,14 +312,14 @@ ordered.model <- OrderedModel(obs=obs,
 ```
 
 Allocate demand to the models
-```{r Allocation}
+```{r AllocationTest}
 clues.model <- allocate(clues.model)
 ordered.model <- allocate(ordered.model, stochastic=TRUE)
 ```
 
 # Plot and Output Rasters
 Clue-S Model Test
-```{r, fig.width=10}
+```{r CluesTest, fig.width=10}
 # Assuming 'clues.model' is your CluesModel object
 clues_output <- clues.model@output
 
@@ -340,8 +335,9 @@ levelplot(clues_output,
 num_layers <- nlayers(clues.model@output)
 print(num_layers)
 ```
+
 Ordered Model Test
-```{r, fig.width=10}
+```{r OrderedTest, fig.width=10}
 library(raster)
 
 # Check if ordered.model@output is a list and contains raster objects
@@ -387,7 +383,7 @@ grid.arrange(plot1, plot2, ncol=1)
 
 An important yet frequently overlooked aspect of land use change modelling is model validation. lulcc provides a recent validation method developed by Pontius et al. (2011), which simultaneously compares a reference (observed) map for time 1, a reference map for time 2 and a simulated map for time 2. The first step in this method is to calculate three dimensional contingency tables:
 
-```{r Threemap}
+```{r ThreemapComparison}
 # evaluate CLUE-S model output
 clues.tabs <- ThreeMapComparison(x=clues.model,
                                    factors=c(1, 2, 4),
@@ -409,7 +405,7 @@ plot(ordered.agr)
 ```
 
 Export Agreement Plot
-```{r}
+```{r AgreementPlotExport}
 # Set Working outputs
 setwd(outputs)
 
@@ -429,21 +425,22 @@ dev.off()
 ```
 
 ```{r FigureOfMerit, echo=TRUE}
-clues.fom <- FigureOfMerit(x=clues.agr)
-plot(clues.fom, from=1, to=2)
-plot(clues.fom, from=1, to=3)
-plot(clues.fom, from=2, to=3)
-
-ordered.fom <- FigureOfMerit(x=ordered.agr)
-plot(ordered.fom, from=1, to=2)
-plot(ordered.fom, from=1, to=3)
-plot(ordered.fom, from=2, to=3)
+# clues.fom <- FigureOfMerit(x=clues.agr)
+# plot(clues.fom, from=1, to=2)
+# plot(clues.fom, from=1, to=3)
+# plot(clues.fom, from=2, to=3)
+# 
+# ordered.fom <- FigureOfMerit(x=ordered.agr)
+# plot(ordered.fom, from=1, to=2)
+# plot(ordered.fom, from=1, to=3)
+# plot(ordered.fom, from=2, to=3)
 ```
+
 ### 4. Extrapolation
 Clue-S Model
 <br>
 Demand Estimation
-```{r Demand}
+```{r DemandExtrapolation}
 # set variable timewindow for extrapolating land cover change to 2100
 timewindow <- c(0,10,37)
 
@@ -453,7 +450,7 @@ dmd
 ```
 
 Manually-assign demand (scenario-based modeling)
-```{r Demand alternate}
+```{r ManualDemandSpecificaiton}
 # # Example demand data for timesteps 0 and 10
 # dmd <- data.frame(
 #   timestep = c(0, 10),
@@ -465,7 +462,7 @@ Manually-assign demand (scenario-based modeling)
 ```
 
 Gather neighbor data from the land use change data.
-```{r Neigh}
+```{r NeighborData}
 w <- matrix(data=1, nrow=3, ncol=3)
 nb <- NeighbRasterStack(x=obs[[1]], weights=w,
                         categories=c(1,2,3,4))
@@ -474,7 +471,7 @@ histRaster <- obs[[1]]  # This extracts the first layer as a RasterLayer
 
 The culmination of the modelling process is to simulate the location of land use change. lulcc provides a routine based on the CLUE-S model (Verburg et al., 2002) and a novel stochastic allocation procedure (with option for using the ordered method). The first step is to combine the various model inputs to ensure they are compatible:
 
-```{r CLUES}
+```{r CLUES_Model}
 clues.rules <- matrix(data=1, nrow=4, ncol=4)
 
 clues.parms <- list(jitter.f=0.0002,
@@ -495,22 +492,12 @@ clues.model <- CluesModel(obs=obs,
                           rules=clues.rules,
                           params=clues.parms)
 
-```
-
-# Perform Allocation
-```{r Allocation}
 clues.model <- allocate(clues.model)
 ```
 
-```{r}
-# summary(obs)
-# summary(ef)
-# summary(dmd)
-# summary(clues.model)
-```
 # Plot and Output Rasters
 Clue-S Model Test
-```{r, fig.width=10}
+```{r CluesVisualization, fig.width=10}
 # Assuming 'clues.model' is your CluesModel object
 clues_output <- clues.model@output
 
@@ -522,7 +509,7 @@ levelplot(clues_output,
 ```
 
 # 5. Exporting Rasters 
-```{r}
+```{r ExportRasters}
 # Set Working outputs
 setwd(outputs)
 
@@ -538,8 +525,8 @@ writeRaster(lc_2023_raster, filename="lc_2023.tif", format="GTiff", overwrite=TR
 ```
 
 ```{r}
-plot(lc_2023_raster)
-plot(lc_2050)
+# plot(lc_2023_raster)
+# plot(lc_2050)
 
 ```
 
