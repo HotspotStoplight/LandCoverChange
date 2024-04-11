@@ -1,0 +1,21 @@
+land_cover_name,land_cover_area,land_cover_proportion
+Agricultural Land,1.1952800468984428,0.4837549682188738
+Extensive Grassland,0.0,0.0
+Carbon Plantation,0.0,0.0
+Regrowth Forest Abandoning,0.0,0.0
+Regrowth Forest Timber,0.3194147889289919,0.12927388143718546
+Biofuels,0.0,0.0
+Ice,0.0,0.0
+Tundra,0.0,0.0
+Wooded Tundra,0.0,0.0
+Boreal Forest,0.0,0.0
+Cool Conifer Forest,0.0,0.0
+Temperate Mixed Forest,0.0,0.0
+Temperate Deciduous Forest,0.0,0.0
+Warm Mixed Forest,0.0,0.0
+Grassland/Steppe,0.0,0.0
+Hot Desert,0.0,0.0
+Scrubland,0.0,0.0
+Savanna,0.15991602312755962,0.06472137712538442
+Tropical Woodland,0.206184880703942,0.08344735668512539
+Tropical Forest,0.5900420303371358,0.23880241653343104
