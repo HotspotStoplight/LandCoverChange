@@ -36,7 +36,6 @@ And the development version from [GitHub](https://github.com/) with:
 library(lulcc)
 library(raster)
 library(rasterVis)
-# library(googleCloudStorageR)
 ```
 
 
@@ -47,11 +46,9 @@ Land use change modelling requires a large amount of input data. The most import
 
 Load Files Locally
 ```{r LoadAndPrep}
-# inputs <- './data/inputs/cropped/crop5c_30m'
-inputs <- './data/inputs/cropped/crop6_30m'
+inputs <- './data/inputs/cropped/crop5c_30m'
 
-# outputs <- "./data/outputs/cropped/crop5c_30m"
-outputs <- "./data/outputs/cropped/crop6_30m"
+outputs <- "./data/outputs/cropped/crop5c_30m"
 
 # List all files in the directory
 files <- list.files(path = inputs, full.names = TRUE)
@@ -524,9 +521,9 @@ writeRaster(lc_2023_raster, filename="lc_2023.tif", format="GTiff", overwrite=TR
 
 ```
 
-```{r}
-# plot(lc_2023_raster)
-# plot(lc_2050)
+```{r CurrentFutureLandCoverPlots}
+plot(lc_2023_raster)
+plot(lc_2050)
 
 ```
 

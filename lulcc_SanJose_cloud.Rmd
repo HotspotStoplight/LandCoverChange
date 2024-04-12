@@ -32,44 +32,59 @@ And the development version from [GitHub](https://github.com/) with:
 ## The lulcc workflow
 *Adapted from https://www.geosci-model-dev.net/8/3215/2015/*
 
-```{r}
+```{r LoadLibraries}
+if (!"googleCloudStorageR" %in% rownames(installed.packages())) {
+    install.packages("googleCloudStorageR", dependencies = TRUE)
+}
+library(googleCloudStorageR)
+
 library(lulcc)
 library(raster)
 library(rasterVis)
-library(googleCloudStorageR)
 ```
 
 
-```{r}
-gcs_auth("/Users/oliveratwood/Documents/GitHub/HotspotStoplight/keys/hotspotstoplight-bfe39b177acf.json")
-```
 
 ### 1. Raster data preparation
 
 Land use change modelling requires a large amount of input data. The most important input is at least one map of observed land use. In lulcc, this data is represented by the `ObsLulcRasterStack` class:
 
 Load Files Locally
-```{r}
-inputs <- './data/inputs/cropped/crop6_30m'
-
-outputs <- "./data/outputs/cropped/crop6_30m"
-
-```
-
-Load Files Remotely
 ```{r LoadAndPrep}
-# LandCover
-url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop6_30m/LandCover.RData"
-load(url(url))
+# Define variables
+bucket_name <- "hotspotstoplight_landcoverchange"
+crop_res <- "crop6_30m"
+input_folder <- "input"
+output_folder <- "output"
 
-# # Factors
-url <- "https://github.com/HotspotStoplight/LandCoverChange/raw/main/data/inputs/cropped/crop6_30m/Factors.RData"
-load(url(url))
+# Set the default bucket name
+gcs_global_bucket(bucket_name)
+
+# List all files in the input directory
+input_path <- file.path(input_folder, crop_res)
+files_info <- gcs_list_objects(prefix = input_path)
+
+# Extract names of the files
+files_names <- sapply(files_info, function(x) x$name)
+
+# Filter for .RData files
+rdata_files <- files_names[grepl("\\.RData$", files_names)]
+
+# Function to download and load an RData file
+load_rdata_gcs <- function(file_name) {
+  temp_file <- tempfile()
+  gcs_get_object(file_name, saveToDisk = temp_file)
+  load(temp_file, .GlobalEnv)
+  unlink(temp_file) # Clean up temporary file
+}
+
+# Load each .RData file
+lapply(rdata_files, load_rdata_gcs)
 
 ```
 
 Define Obs Variable
-```{r}
+```{r DefineObsVariable}
 obs <- ObsLulcRasterStack(x=LandCover,
                           pattern="lc",
                           categories=c(1,2,3,4),
@@ -78,25 +93,25 @@ obs <- ObsLulcRasterStack(x=LandCover,
 ```
 
 
-```{r, fig.width=12, fig.height=6.75}
+```{r PlotLandCoverRasters, fig.width=12, fig.height=6.75}
 # Assuming your ObsLulcRasterStack 'obs' is compatible with raster plotting
 # Extract layers by time points (assuming two time points for simplicity)
 lc_2013_raster <- raster(obs, layer=1)
 lc_2023_raster <- raster(obs, layer=2)
 
-# # Plot the first time point
-# plot(lc_2013_raster, main="Land Cover 2013", col=c('darkgreen', 'tan', 'red', 'blue'), breaks=c(0.5, 1.5, 2.5, 3.5, 4.5), legend=FALSE)
-# legend("topright", legend=c('Forest', 'Other', 'Built', 'Water'), fill=c('darkgreen', 'tan', 'red', 'blue'))
-# 
-# # Plot the second time point
-# plot(lc_2023_raster, main="Land Cover 2023", col=c('darkgreen', 'tan', 'red', 'blue'), breaks=c(0.5, 1.5, 2.5, 3.5, 4.5), legend=FALSE)
-# legend("topright", legend=c('Forest', 'Other', 'Built', 'Water'), fill=c('darkgreen', 'tan', 'red', 'blue'))
+# Plot the first time point
+plot(lc_2013_raster, main="Land Cover 2013", col=c('darkgreen', 'tan', 'red', 'blue'), breaks=c(0.5, 1.5, 2.5, 3.5, 4.5), legend=FALSE)
+legend("topright", legend=c('Forest', 'Other', 'Built', 'Water'), fill=c('darkgreen', 'tan', 'red', 'blue'))
+
+# Plot the second time point
+plot(lc_2023_raster, main="Land Cover 2023", col=c('darkgreen', 'tan', 'red', 'blue'), breaks=c(0.5, 1.5, 2.5, 3.5, 4.5), legend=FALSE)
+legend("topright", legend=c('Forest', 'Other', 'Built', 'Water'), fill=c('darkgreen', 'tan', 'red', 'blue'))
 
 ```
 
 A useful starting point in land use change modelling is to obtain a transition matrix for two observed land use maps to identify the main transitions. This can be achieved with the `crossTabulate` function:
 
-```{r CrossTab, echo=TRUE}
+```{r CrossTabulate, echo=TRUE}
 # obtain a transition matrix from land use maps for 1985 and 1991
 crossTabulate(obs, times=c(0,10))
 ```
@@ -172,32 +187,31 @@ points <- rasterToPoints(obs[[1]], spatial=TRUE)
 probmaps <- SpatialPointsDataFrame(points, probmaps)
 probmaps <- rasterize(x=probmaps, y=obs[[1]],
                       field=names(probmaps))
-# rasterVis::levelplot(probmaps)
+rasterVis::levelplot(probmaps)
 ```
 # OUTPUT PROBABILITY RASTERS
-```{r}
-# Your Google Cloud Storage Bucket name
-bucket_name <- "your-bucket-name"
-
-# Loop through each band
+```{r OutputProbabilityRasters}
+# Loop through each band of the raster stack
 for (i in 1:nlayers(probmaps)) {
   # Extract the single band
   single_band <- raster(probmaps, layer = i)
 
   # Create a filename from the band's name
   filename <- paste0(names(single_band), ".tif")
+  
+  # Create a temporary file path
+  temp_file <- tempfile(fileext = ".tif")
 
   # Write the single band raster to a temporary TIFF file
-  temp_file <- tempfile(fileext = ".tif")
   writeRaster(single_band, temp_file, format = "GTiff", overwrite = TRUE)
   
-  # Upload the file to Google Cloud Storage
-  gcs_upload(local_file = temp_file,
-             bucket = bucket_name,
-             name = filename, 
-             predefinedAcl = "publicRead") # Adjust the ACL as needed
+  # Construct the full path for GCS upload
+  full_path <- file.path(output_folder, crop_res, filename)
   
-  # Optionally, delete the temporary file if you want to clean up the local storage
+  # Upload the TIFF file to Google Cloud Storage
+  gcs_upload_object(temp_file, full_path)
+
+  # Optionally, remove the temporary file to free up space
   unlink(temp_file)
 }
 
@@ -224,40 +238,33 @@ rf.pred <- PredictionList(models=rf.models,
 rf.perf <- PerformanceList(pred=rf.pred,
                            measure="rch")
 #Plot ROC Curves
-# plot(list(glm=glm.perf,
-#           rf=rf.perf))
-```
-Export ROC Curves
-```{r}
-# Set Working outputs
-setwd(outputs)
-
-# Specify the file path and name, along with desired dimensions
-png("ROC_Curves.png", width = 1600, height = 900)
-
-# Your plotting code
 plot(list(glm=glm.perf,
           rf=rf.perf))
+```
+
+Export ROC Curves
+```{r ROC_Curves}
+# Create a temporary file path for the plot
+temp_file <- tempfile(fileext = ".png")
+
+# Specify the file path and name, along with desired dimensions for the PNG plot
+png(temp_file, width = 1600, height = 900)
+
+# Your plotting code
+plot(list(glm=glm.perf, rf=rf.perf))
 
 # Close the plotting device
 dev.off()
-```
 
-Another use of ROC analysis is to assess how well the models predict the cells in which gain occurs between two time points. This is only possible if a second observed land use map is available for a subsequent time point. Here we perform this type of analysis for the gain of built between 1985 and 1991. First, we create a data partition in which cells not candidate for gain (cells belonging to built in 1985) are eliminated. We then assess the ability of the various predictive models to predict the gain of built in this partition:
+# Construct the full path for GCS upload
+full_path <- file.path(output_folder, crop_res, "ROC_Curves.png")
 
-```{r PerformancesTest}
-# part <- rasterToPoints (obs[[1]],
-#                         fun=function(x) x != 2,
-#                         spatial=TRUE)
-# test.data<- getPredictiveModelInputData(obs=obs,
-#                                         ef=ef,
-#                                         cells=part,
-#                                         t=6)
-# glm.pred <- PredictionList(models=glm.models[[2]],
-#                            newdata=test.data)
-# glm.perf <- PerformanceList(pred=glm.pred,
-#                             measure="rch")
-# plot(list(glm=glm.perf))
+# Upload the PNG file to Google Cloud Storage
+gcs_upload_object(temp_file, full_path)
+
+# Optionally, remove the temporary file to free up space
+unlink(temp_file)
+
 ```
 
 ### 3. Allocation
@@ -265,7 +272,7 @@ Another use of ROC analysis is to assess how well the models predict the cells i
 Spatially explicit land use change models are usually driven by non-spatial estimates of land use area for each timestep in the simulation.
 While many complex methods have been devised, in lulcc we simply provide a method for linear extrapolation of land use change, which relies on there being at least two observed land use maps:
 
-```{r Demand}
+```{r DemandTest}
 # set variable timewindow for testing
 timewindow <- c(0,10)
 
@@ -275,7 +282,7 @@ dmd
 ```
 
 We then use a filter defined as a matrix within the `NeighbRasterStack` function to gather neighbor data from the land use change data.
-```{r Neigh}
+```{r NeighborModelTest}
 w <- matrix(data=1, nrow=3, ncol=3)
 nb <- NeighbRasterStack(x=obs[[1]], weights=w,
                         categories=c(1,2,3,4))
@@ -284,7 +291,7 @@ histRaster <- obs[[1]]  # This extracts the first layer as a RasterLayer
 
 The culmination of the modelling process is to simulate the location of land use change. lulcc provides a routine based on the CLUE-S model (Verburg et al., 2002) and a novel stochastic allocation procedure (with option for using the ordered method). The first step is to combine the various model inputs to ensure they are compatible:
 
-```{r CLUES}
+```{r CLUESModelTest}
 clues.rules <- matrix(data=1, nrow=4, ncol=4)
 
 clues.parms <- list(jitter.f=0.0002,
@@ -314,14 +321,14 @@ ordered.model <- OrderedModel(obs=obs,
 ```
 
 Allocate demand to the models
-```{r Allocation}
+```{r AllocationTest}
 clues.model <- allocate(clues.model)
 ordered.model <- allocate(ordered.model, stochastic=TRUE)
 ```
 
 # Plot and Output Rasters
 Clue-S Model Test
-```{r, fig.width=10}
+```{r CluesTest, fig.width=10}
 # Assuming 'clues.model' is your CluesModel object
 clues_output <- clues.model@output
 
@@ -337,10 +344,9 @@ levelplot(clues_output,
 num_layers <- nlayers(clues.model@output)
 print(num_layers)
 ```
-Ordered Model Test
-```{r, fig.width=10}
-library(raster)
 
+Ordered Model Test
+```{r OrderedTest, fig.width=10}
 # Check if ordered.model@output is a list and contains raster objects
 if("list" %in% class(ordered.model@output) && all(sapply(ordered.model@output, function(x) inherits(x, "Raster")))) {
   for(i in seq_along(ordered.model@output)) {
@@ -365,17 +371,17 @@ if("list" %in% class(ordered.model@output) && all(sapply(ordered.model@output, f
 #           col.regions=colorRampPalette(c("darkgreen", "tan", "red", "blue")),
 #           main="Land Use Categories (Random Forest ModelOrdered)")
 
-# # Generate individual plots with specific titles
-# plot1 <- levelplot(ordered.model@output[[1]], 
-#                    col.regions=colorRampPalette(c("darkgreen", "tan", "red", "blue")),
-#                    main="2013 Land Cover")
-# 
-# plot2 <- levelplot(ordered.model@output[[2]], 
-#                    col.regions=colorRampPalette(c("darkgreen", "tan", "red", "blue")),
-#                    main="2023 Land Cover")
-# 
-# # Arrange the plots together
-# grid.arrange(plot1, plot2, ncol=1)
+# Generate individual plots with specific titles
+plot1 <- levelplot(ordered.model@output[[1]], 
+                   col.regions=colorRampPalette(c("darkgreen", "tan", "red", "blue")),
+                   main="2013 Land Cover")
+
+plot2 <- levelplot(ordered.model@output[[2]], 
+                   col.regions=colorRampPalette(c("darkgreen", "tan", "red", "blue")),
+                   main="2023 Land Cover")
+
+# Arrange the plots together
+grid.arrange(plot1, plot2, ncol=1)
 
 ```
 
@@ -384,7 +390,7 @@ if("list" %in% class(ordered.model@output) && all(sapply(ordered.model@output, f
 
 An important yet frequently overlooked aspect of land use change modelling is model validation. lulcc provides a recent validation method developed by Pontius et al. (2011), which simultaneously compares a reference (observed) map for time 1, a reference map for time 2 and a simulated map for time 2. The first step in this method is to calculate three dimensional contingency tables:
 
-```{r Threemap}
+```{r ThreemapComparison}
 # evaluate CLUE-S model output
 clues.tabs <- ThreeMapComparison(x=clues.model,
                                    factors=c(1, 2, 4),
@@ -406,41 +412,56 @@ plot(ordered.agr)
 ```
 
 Export Agreement Plot
-```{r}
-# Set Working outputs
-setwd(outputs)
+```{r AgreementPlotExport}
+# Function to create and upload a plot
+create_and_upload_plot <- function(plot_code, plot_name) {
+  # Create a temporary file path for the plot
+  temp_file <- tempfile(fileext = ".png")
+  
+  # Start PNG device with the temporary file path
+  png(temp_file, width = 1600, height = 900)
+  
+  # Execute the plotting code
+  plot_code()
+  
+  # Close the plotting device
+  dev.off()
+  
+  # Construct the full path for GCS upload
+  full_path <- file.path(output_folder, crop_res, plot_name)
+  
+  # Upload the PNG file to Google Cloud Storage
+  gcs_upload_object(temp_file, full_path)
+  
+  # Remove the temporary file to free up space
+  unlink(temp_file)
+}
 
-# Specify the file path and name, along with desired dimensions
-png("Clue-S_AgreementBudget.png", width = 1600, height = 900)
-# Your plotting code
-plot(clues.agr)
-# Close the plotting device
-dev.off()
+# Create and upload "Clue-S AgreementBudget.png"
+create_and_upload_plot(plot_code = function() plot(clues.agr), plot_name = "Clue-S_AgreementBudget.png")
 
-# Specify the file path and name, along with desired dimensions
-png("Ordered_AgreementBudget.png", width = 1600, height = 900)
-# Your plotting code
-plot(ordered.agr)
-# Close the plotting device
-dev.off()
+# Create and upload "Ordered AgreementBudget.png"
+create_and_upload_plot(plot_code = function() plot(ordered.agr), plot_name = "Ordered_AgreementBudget.png")
+
 ```
 
 ```{r FigureOfMerit, echo=TRUE}
-clues.fom <- FigureOfMerit(x=clues.agr)
-plot(clues.fom, from=1, to=2)
-plot(clues.fom, from=1, to=3)
-plot(clues.fom, from=2, to=3)
-
-ordered.fom <- FigureOfMerit(x=ordered.agr)
-plot(ordered.fom, from=1, to=2)
-plot(ordered.fom, from=1, to=3)
-plot(ordered.fom, from=2, to=3)
+# clues.fom <- FigureOfMerit(x=clues.agr)
+# plot(clues.fom, from=1, to=2)
+# plot(clues.fom, from=1, to=3)
+# plot(clues.fom, from=2, to=3)
+# 
+# ordered.fom <- FigureOfMerit(x=ordered.agr)
+# plot(ordered.fom, from=1, to=2)
+# plot(ordered.fom, from=1, to=3)
+# plot(ordered.fom, from=2, to=3)
 ```
+
 ### 4. Extrapolation
 Clue-S Model
 <br>
 Demand Estimation
-```{r Demand}
+```{r DemandExtrapolation}
 # set variable timewindow for extrapolating land cover change to 2100
 timewindow <- c(0,10,37)
 
@@ -450,7 +471,7 @@ dmd
 ```
 
 Manually-assign demand (scenario-based modeling)
-```{r Demand alternate}
+```{r ManualDemandSpecificaiton}
 # # Example demand data for timesteps 0 and 10
 # dmd <- data.frame(
 #   timestep = c(0, 10),
@@ -462,7 +483,7 @@ Manually-assign demand (scenario-based modeling)
 ```
 
 Gather neighbor data from the land use change data.
-```{r Neigh}
+```{r NeighborData}
 w <- matrix(data=1, nrow=3, ncol=3)
 nb <- NeighbRasterStack(x=obs[[1]], weights=w,
                         categories=c(1,2,3,4))
@@ -471,7 +492,7 @@ histRaster <- obs[[1]]  # This extracts the first layer as a RasterLayer
 
 The culmination of the modelling process is to simulate the location of land use change. lulcc provides a routine based on the CLUE-S model (Verburg et al., 2002) and a novel stochastic allocation procedure (with option for using the ordered method). The first step is to combine the various model inputs to ensure they are compatible:
 
-```{r CLUES}
+```{r CLUES_Model}
 clues.rules <- matrix(data=1, nrow=4, ncol=4)
 
 clues.parms <- list(jitter.f=0.0002,
@@ -492,22 +513,12 @@ clues.model <- CluesModel(obs=obs,
                           rules=clues.rules,
                           params=clues.parms)
 
-```
-
-# Perform Allocation
-```{r Allocation}
 clues.model <- allocate(clues.model)
 ```
 
-```{r}
-# summary(obs)
-# summary(ef)
-# summary(dmd)
-# summary(clues.model)
-```
 # Plot and Output Rasters
 Clue-S Model Test
-```{r, fig.width=10}
+```{r CluesVisualization, fig.width=10}
 # Assuming 'clues.model' is your CluesModel object
 clues_output <- clues.model@output
 
@@ -519,22 +530,38 @@ levelplot(clues_output,
 ```
 
 # 5. Exporting Rasters 
-```{r}
-# Set Working outputs
-setwd(outputs)
+```{r ExportRasters}
+# Function to write and upload a raster
+upload_raster <- function(raster_obj, file_name) {
+  # Create a temporary file
+  temp_file <- tempfile(fileext = ".tif")
+  
+  # Write the raster to the temporary file
+  writeRaster(raster_obj, filename = temp_file, format = "GTiff", overwrite = TRUE)
+  
+  # Construct the full path for GCS upload
+  full_path <- file.path(output_folder, crop_res, file_name)
+  
+  # Upload the TIFF file to Google Cloud Storage
+  gcs_upload_object(temp_file, full_path)
+  
+  # Remove the temporary file to free up space
+  unlink(temp_file)
+}
 
-# Extract the second band
+# Extract the second band for 2050 land cover data
 lc_2050 <- raster(clues_output, layer=2)
+# Export and upload 2050 land cover data
+upload_raster(lc_2050, "lc_2050.tif")
 
-# Export 2050 land cover data
-writeRaster(lc_2050, filename="lc_2050.tif", format="GTiff", overwrite=TRUE)
+# Assume lc_2023_raster is already defined and ready
+# Export and upload 2023 land cover data
+upload_raster(lc_2023_raster, "lc_2023.tif")
 
-# Export 2023 land cover data
-writeRaster(lc_2023_raster, filename="lc_2023.tif", format="GTiff", overwrite=TRUE)
 
 ```
 
-```{r}
+```{r CurrentFutureLandCoverPlots}
 plot(lc_2023_raster)
 plot(lc_2050)
 
