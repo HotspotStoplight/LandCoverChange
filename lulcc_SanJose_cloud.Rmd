@@ -50,14 +50,11 @@ library(gargle)
 scope <-c("https://www.googleapis.com/auth/cloud-platform")
 token <- token_fetch(scopes = scope)
 
-
 ## Pass your token to gcs_auth
 gcs_auth(token = token)
 
-
 # set default bucket
 gcs_global_bucket("hotspotstoplight_landcoverchange")
-
 
 ## Show objects
 objects <- gcs_list_objects(bucket = "hotspotstoplight_landcoverchange", prefix = "data/")
@@ -76,6 +73,13 @@ load("data/Factors.RData")
 load("data/LandCover.RData")
 
 ```
+
+```{r define output variables}
+# Define output folder and crop result for demonstration
+output_folder <- "data"  # Local directory to store plots
+outputs <- "outputs"   # Subfolder
+```
+
 
 ```{r DefineObsVariable}
 obs <- ObsLulcRasterStack(x=LandCover,
@@ -170,6 +174,11 @@ probmaps <- rasterize(x=probmaps, y=obs[[1]],
 ```
 
 ```{r OutputProbabilityRasters}
+# Ensure the local output directory exists
+if(!dir.exists(output_folder)) {
+  dir.create(output_folder, recursive = TRUE)
+}
+
 # Loop through each band of the raster stack
 for (i in 1:nlayers(probmaps)) {
   # Extract the single band
@@ -178,28 +187,26 @@ for (i in 1:nlayers(probmaps)) {
   # Create a filename from the band's name
   filename <- paste0(names(single_band), ".tif")
   
-  # Create a temporary file path
-  temp_file <- tempfile(fileext = ".tif")
+  # Construct the full path for local saving
+  local_file_path <- file.path(output_folder, outputs, filename)
+  dir.create(dirname(local_file_path), recursive = TRUE)  # Ensure directory exists
 
-  # Write the single band raster to a temporary TIFF file
-  writeRaster(single_band, temp_file, format = "GTiff", overwrite = TRUE)
+  # Write the single band raster to the local TIFF file
+  writeRaster(single_band, local_file_path, format = "GTiff", overwrite = TRUE)
   
-  # Construct the full path for GCS upload
-  full_path <- file.path(output_folder, crop_res, filename)
-  
+  # Set the GCS path which includes the folder structure within the bucket
+  gcs_path <- file.path("data", outputs, filename)
+
   # Upload the TIFF file to Google Cloud Storage
-  gcs_upload_object(temp_file, full_path)
+  gcs_upload(local_file_path, name = gcs_path)
 
-  # Optionally, remove the temporary file to free up space
-  unlink(temp_file)
+  # Optionally, remove the local file to free up space, if not needed locally
+  unlink(local_file_path)
 }
 
 ```
 
-
-Model performance is assessed using the receiver operator characteristic provided by the [ROCR](http://cran.r-project.org/web/packages/ROCR/index.html) package. lulcc includes classes `Prediction` and `Performance` which extend the native ROCR classes to contain multiple `prediction` and `performance` objects. The procedure to obtain these objects and assess performance is as follows:
-
-```{r Performances, echo = TRUE}
+```{r Performance, echo = TRUE}
 #GLM
 glm.pred <- PredictionList(models=glm.models,
                            newdata=test.data)
@@ -216,9 +223,9 @@ rf.pred <- PredictionList(models=rf.models,
                           newdata=test.data)
 rf.perf <- PerformanceList(pred=rf.pred,
                            measure="rch")
-#Plot ROC Curves
-plot(list(glm=glm.perf,
-          rf=rf.perf))
+# #Plot ROC Curves
+# plot(list(glm=glm.perf,
+#           rf=rf.perf))
 ```
 
 Export ROC Curves
@@ -229,17 +236,29 @@ temp_file <- tempfile(fileext = ".png")
 # Specify the file path and name, along with desired dimensions for the PNG plot
 png(temp_file, width = 1600, height = 900)
 
-# Your plotting code
+# Insert your plotting code here; replace 'plot(...)' with your actual plotting function
 plot(list(glm=glm.perf, rf=rf.perf))
 
 # Close the plotting device
 dev.off()
 
-# Construct the full path for GCS upload
-full_path <- file.path(output_folder, crop_res, "ROC_Curves.png")
+# Ensure the local output directory exists
+if(!dir.exists(output_folder)) {
+  dir.create(output_folder, recursive = TRUE)
+}
+
+# Construct the full path for local saving and GCS upload
+local_file_path <- file.path(output_folder, outputs, "ROC_Curves.png")
+dir.create(dirname(local_file_path), recursive = TRUE)  # Ensure directory exists
+
+# Copy the file from temp location to the local desired path
+file.copy(temp_file, local_file_path)
+
+# Set the GCS path which includes the folder structure within the bucket
+gcs_path <- file.path("data", outputs, "ROC_Curves.png")
 
 # Upload the PNG file to Google Cloud Storage
-gcs_upload_object(temp_file, full_path)
+gcs_upload(local_file_path, name = gcs_path)
 
 # Optionally, remove the temporary file to free up space
 unlink(temp_file)
@@ -350,17 +369,17 @@ if("list" %in% class(ordered.model@output) && all(sapply(ordered.model@output, f
 #           col.regions=colorRampPalette(c("darkgreen", "tan", "red", "blue")),
 #           main="Land Use Categories (Random Forest ModelOrdered)")
 
-# Generate individual plots with specific titles
-plot1 <- levelplot(ordered.model@output[[1]], 
-                   col.regions=colorRampPalette(c("darkgreen", "tan", "red", "blue")),
-                   main="2013 Land Cover")
-
-plot2 <- levelplot(ordered.model@output[[2]], 
-                   col.regions=colorRampPalette(c("darkgreen", "tan", "red", "blue")),
-                   main="2023 Land Cover")
-
-# Arrange the plots together
-grid.arrange(plot1, plot2, ncol=1)
+# # Generate individual plots with specific titles
+# plot1 <- levelplot(ordered.model@output[[1]], 
+#                    col.regions=colorRampPalette(c("darkgreen", "tan", "red", "blue")),
+#                    main="2013 Land Cover")
+# 
+# plot2 <- levelplot(ordered.model@output[[2]], 
+#                    col.regions=colorRampPalette(c("darkgreen", "tan", "red", "blue")),
+#                    main="2023 Land Cover")
+# 
+# # Arrange the plots together
+# grid.arrange(plot1, plot2, ncol=1)
 
 ```
 
@@ -384,16 +403,22 @@ From these tables we can easily extract information about different types of agr
 Agreement Plot
 ```{r AgreementBudget, echo=TRUE}
 clues.agr <- AgreementBudget(x=clues.tabs)
-plot(clues.agr)
+# plot(clues.agr)
 
 ordered.agr <- AgreementBudget(x=ordered.tabs)
-plot(ordered.agr)
+# plot(ordered.agr)
 ```
 
 Export Agreement Plot
 ```{r AgreementPlotExport}
 # Function to create and upload a plot
 create_and_upload_plot <- function(plot_code, plot_name) {
+
+  # Ensure the local output directory exists
+  if(!dir.exists(file.path(output_folder, outputs))) {
+    dir.create(file.path(output_folder, outputs), recursive = TRUE)
+  }
+
   # Create a temporary file path for the plot
   temp_file <- tempfile(fileext = ".png")
   
@@ -406,16 +431,24 @@ create_and_upload_plot <- function(plot_code, plot_name) {
   # Close the plotting device
   dev.off()
   
-  # Construct the full path for GCS upload
-  full_path <- file.path(output_folder, crop_res, plot_name)
+  # Construct the full path for local saving
+  local_file_path <- file.path(output_folder, outputs, plot_name)
+  
+  # Move the plot from the temporary location to the final local path
+  file.copy(temp_file, local_file_path, overwrite = TRUE)
+  
+  # Set the GCS path which includes the folder structure within the bucket
+  gcs_path <- file.path("data", outputs, plot_name)
   
   # Upload the PNG file to Google Cloud Storage
-  gcs_upload_object(temp_file, full_path)
+  gcs_upload(local_file_path, name = gcs_path)
   
-  # Remove the temporary file to free up space
+  # Remove the temporary and local file to free up space
   unlink(temp_file)
+  unlink(local_file_path)
 }
 
+# Example usage:
 # Create and upload "Clue-S AgreementBudget.png"
 create_and_upload_plot(plot_code = function() plot(clues.agr), plot_name = "Clue-S_AgreementBudget.png")
 
@@ -512,22 +545,39 @@ levelplot(clues_output,
 ```{r ExportRasters}
 # Function to write and upload a raster
 upload_raster <- function(raster_obj, file_name) {
+  # Define output folder and results type (assumed to be defined globally or pass as parameters)
+  output_folder <- "data"  # Local directory to store files
+  crop_res <- "results"    # Subfolder for categorizing outputs
+
+  # Ensure the local output directory exists
+  if(!dir.exists(file.path(output_folder, outputs))) {
+    dir.create(file.path(output_folder, outputs), recursive = TRUE)
+  }
+
   # Create a temporary file
   temp_file <- tempfile(fileext = ".tif")
   
   # Write the raster to the temporary file
   writeRaster(raster_obj, filename = temp_file, format = "GTiff", overwrite = TRUE)
   
-  # Construct the full path for GCS upload
-  full_path <- file.path(output_folder, crop_res, file_name)
+  # Construct the full path for local saving
+  local_file_path <- file.path(output_folder, outputs, file_name)
+  
+  # Move the raster from the temporary location to the final local path
+  file.copy(temp_file, local_file_path, overwrite = TRUE)
+  
+  # Set the GCS path which includes the folder structure within the bucket
+  gcs_path <- file.path("data", outputs, file_name)
   
   # Upload the TIFF file to Google Cloud Storage
-  gcs_upload_object(temp_file, full_path)
+  gcs_upload(local_file_path, name = gcs_path)
   
-  # Remove the temporary file to free up space
+  # Remove the temporary and local file to free up space
   unlink(temp_file)
+  unlink(local_file_path)
 }
 
+# Example usage:
 # Extract the second band for 2050 land cover data
 lc_2050 <- raster(clues_output, layer=2)
 # Export and upload 2050 land cover data
@@ -538,11 +588,6 @@ upload_raster(lc_2050, "lc_2050.tif")
 upload_raster(lc_2023_raster, "lc_2023.tif")
 
 
-```
-
-```{r CurrentFutureLandCoverPlots}
-plot(lc_2023_raster)
-plot(lc_2050)
 
 ```
 
