@@ -41,6 +41,7 @@ library(googleCloudStorageR)
 library(lulcc)
 library(raster)
 library(rasterVis)
+library(gargle)
 ```
 
 
@@ -49,39 +50,62 @@ library(rasterVis)
 
 Land use change modelling requires a large amount of input data. The most important input is at least one map of observed land use. In lulcc, this data is represented by the `ObsLulcRasterStack` class:
 
-Load Files Locally
+Load Files From Google Cloud
 ```{r LoadAndPrep}
-# Define variables
-bucket_name <- "hotspotstoplight_landcoverchange"
-crop_res <- "crop6_30m"
-input_folder <- "input"
-output_folder <- "output"
-
-# Set the default bucket name
-gcs_global_bucket(bucket_name)
-
-# List all files in the input directory
-input_path <- file.path(input_folder, crop_res)
-files_info <- gcs_list_objects(prefix = input_path)
-
-# Extract names of the files
-files_names <- sapply(files_info, function(x) x$name)
-
-# Filter for .RData files
-rdata_files <- files_names[grepl("\\.RData$", files_names)]
-
-# Function to download and load an RData file
-load_rdata_gcs <- function(file_name) {
-  temp_file <- tempfile()
-  gcs_get_object(file_name, saveToDisk = temp_file)
-  load(temp_file, .GlobalEnv)
-  unlink(temp_file) # Clean up temporary file
-}
-
-# Load each .RData file
-lapply(rdata_files, load_rdata_gcs)
+# # Define variables
+# bucket_name <- "hotspotstoplight_landcoverchange"
+# crop_res <- "crop6_30m"
+# input_folder <- "input"
+# output_folder <- "output"
+# 
+# # Set the default bucket name
+# gcs_global_bucket(bucket_name)
+# 
+# # List all files in the input directory
+# input_path <- file.path(input_folder, crop_res)
+# files_info <- gcs_list_objects(prefix = input_path)
+# 
+# # Extract names of the files
+# files_names <- sapply(files_info, function(x) x$name)
+# 
+# # Filter for .RData files
+# rdata_files <- files_names[grepl("\\.RData$", files_names)]
+# 
+# # Function to download and load an RData file
+# load_rdata_gcs <- function(file_name) {
+#   temp_file <- tempfile()
+#   gcs_get_object(file_name, saveToDisk = temp_file)
+#   load(temp_file, .GlobalEnv)
+#   unlink(temp_file) # Clean up temporary file
+# }
+# 
+# # Load each .RData file
+# lapply(rdata_files, load_rdata_gcs)
 
 ```
+```{r}
+## Fetch token. See: https://developers.google.com/identity/protocols/oauth2/scopes
+scope <-c("https://www.googleapis.com/auth/cloud-platform")
+token <- token_fetch(scopes = scope)
+
+
+## Pass your token to gcs_auth
+gcs_auth(token = token)
+
+
+# set default bucket
+gcs_global_bucket("hotspotstoplight_landcoverchange")
+
+
+## Show objects
+objects <- gcs_list_objects(bucket = "hotspotstoplight_landcoverchange")
+
+
+# download the file to given location, you can see the index of the files from previous step.
+gcs_get_object(objects$name[[3]], saveToDisk = "data/fileName.RData")
+```
+
+
 
 Define Obs Variable
 ```{r DefineObsVariable}
