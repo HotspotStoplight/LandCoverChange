@@ -38,10 +38,19 @@ if (!"googleCloudStorageR" %in% rownames(installed.packages())) {
 }
 library(googleCloudStorageR)
 
+if (!"gargle" %in% rownames(installed.packages())) {
+    install.packages("gargle", dependencies = TRUE)
+}
+library(gargle)
+
+if (!"Hmisc" %in% rownames(installed.packages())) {
+    install.packages("Hmisc", dependencies = TRUE)
+}
+library(Hmisc)
+
 library(lulcc)
 library(raster)
 library(rasterVis)
-library(gargle)
 ```
 
 
