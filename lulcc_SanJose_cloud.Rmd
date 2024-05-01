@@ -98,13 +98,22 @@ gcs_global_bucket("hotspotstoplight_landcoverchange")
 
 
 ## Show objects
-objects <- gcs_list_objects(bucket = "hotspotstoplight_landcoverchange")
+objects <- gcs_list_objects(bucket = "hotspotstoplight_landcoverchange", prefix = "data/")
 
+# Loop through the objects and download each file
+for (i in seq_along(objects$name)) {
+  file_path <- objects$name[[i]]
+  save_path <- paste("data/", basename(file_path), sep = "")
+  gcs_get_object(file_path, saveToDisk = save_path)
+}
 
-# download the file to given location, you can see the index of the files from previous step.
-gcs_get_object(objects$name[[3]], saveToDisk = "data/fileName.RData")
+# Load the first .RData file
+load("data/Factors.RData")
+
+# Load the second .RData file
+load("data/LandCover.RData")
+
 ```
-
 
 
 Define Obs Variable
