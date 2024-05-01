@@ -43,10 +43,10 @@ if (!"gargle" %in% rownames(installed.packages())) {
 }
 library(gargle)
 
-if (!"Hmisc" %in% rownames(installed.packages())) {
-    install.packages("Hmisc", dependencies = TRUE)
-}
-library(Hmisc)
+# if (!"Hmisc" %in% rownames(installed.packages())) {
+#     install.packages("Hmisc", dependencies = TRUE)
+# }
+# library(Hmisc)
 
 library(lulcc)
 library(raster)
