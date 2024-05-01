@@ -45,45 +45,7 @@ library(gargle)
 ```
 
 
-
-### 1. Raster data preparation
-
-Land use change modelling requires a large amount of input data. The most important input is at least one map of observed land use. In lulcc, this data is represented by the `ObsLulcRasterStack` class:
-
-Load Files From Google Cloud
-```{r LoadAndPrep}
-# # Define variables
-# bucket_name <- "hotspotstoplight_landcoverchange"
-# crop_res <- "crop6_30m"
-# input_folder <- "input"
-# output_folder <- "output"
-# 
-# # Set the default bucket name
-# gcs_global_bucket(bucket_name)
-# 
-# # List all files in the input directory
-# input_path <- file.path(input_folder, crop_res)
-# files_info <- gcs_list_objects(prefix = input_path)
-# 
-# # Extract names of the files
-# files_names <- sapply(files_info, function(x) x$name)
-# 
-# # Filter for .RData files
-# rdata_files <- files_names[grepl("\\.RData$", files_names)]
-# 
-# # Function to download and load an RData file
-# load_rdata_gcs <- function(file_name) {
-#   temp_file <- tempfile()
-#   gcs_get_object(file_name, saveToDisk = temp_file)
-#   load(temp_file, .GlobalEnv)
-#   unlink(temp_file) # Clean up temporary file
-# }
-# 
-# # Load each .RData file
-# lapply(rdata_files, load_rdata_gcs)
-
-```
-```{r}
+```{r Load Data from Google Cloud}
 ## Fetch token. See: https://developers.google.com/identity/protocols/oauth2/scopes
 scope <-c("https://www.googleapis.com/auth/cloud-platform")
 token <- token_fetch(scopes = scope)
@@ -104,7 +66,7 @@ objects <- gcs_list_objects(bucket = "hotspotstoplight_landcoverchange", prefix 
 for (i in seq_along(objects$name)) {
   file_path <- objects$name[[i]]
   save_path <- paste("data/", basename(file_path), sep = "")
-  gcs_get_object(file_path, saveToDisk = save_path)
+  gcs_get_object(file_path, saveToDisk = save_path, overwrite = TRUE)
 }
 
 # Load the first .RData file
@@ -115,8 +77,6 @@ load("data/LandCover.RData")
 
 ```
 
-
-Define Obs Variable
 ```{r DefineObsVariable}
 obs <- ObsLulcRasterStack(x=LandCover,
                           pattern="lc",
@@ -125,46 +85,35 @@ obs <- ObsLulcRasterStack(x=LandCover,
                           t=c(0,10))
 ```
 
-
 ```{r PlotLandCoverRasters, fig.width=12, fig.height=6.75}
-# Assuming your ObsLulcRasterStack 'obs' is compatible with raster plotting
-# Extract layers by time points (assuming two time points for simplicity)
-lc_2013_raster <- raster(obs, layer=1)
-lc_2023_raster <- raster(obs, layer=2)
-
-# Plot the first time point
-plot(lc_2013_raster, main="Land Cover 2013", col=c('darkgreen', 'tan', 'red', 'blue'), breaks=c(0.5, 1.5, 2.5, 3.5, 4.5), legend=FALSE)
-legend("topright", legend=c('Forest', 'Other', 'Built', 'Water'), fill=c('darkgreen', 'tan', 'red', 'blue'))
-
-# Plot the second time point
-plot(lc_2023_raster, main="Land Cover 2023", col=c('darkgreen', 'tan', 'red', 'blue'), breaks=c(0.5, 1.5, 2.5, 3.5, 4.5), legend=FALSE)
-legend("topright", legend=c('Forest', 'Other', 'Built', 'Water'), fill=c('darkgreen', 'tan', 'red', 'blue'))
+# # Assuming your ObsLulcRasterStack 'obs' is compatible with raster plotting
+# # Extract layers by time points (assuming two time points for simplicity)
+# lc_2013_raster <- raster(obs, layer=1)
+# lc_2023_raster <- raster(obs, layer=2)
+# 
+# # Plot the first time point
+# plot(lc_2013_raster, main="Land Cover 2013", col=c('darkgreen', 'tan', 'red', 'blue'), breaks=c(0.5, 1.5, 2.5, 3.5, 4.5), legend=FALSE)
+# legend("topright", legend=c('Forest', 'Other', 'Built', 'Water'), fill=c('darkgreen', 'tan', 'red', 'blue'))
+# 
+# # Plot the second time point
+# plot(lc_2023_raster, main="Land Cover 2023", col=c('darkgreen', 'tan', 'red', 'blue'), breaks=c(0.5, 1.5, 2.5, 3.5, 4.5), legend=FALSE)
+# legend("topright", legend=c('Forest', 'Other', 'Built', 'Water'), fill=c('darkgreen', 'tan', 'red', 'blue'))
 
 ```
-
-A useful starting point in land use change modelling is to obtain a transition matrix for two observed land use maps to identify the main transitions. This can be achieved with the `crossTabulate` function:
 
 ```{r CrossTabulate, echo=TRUE}
 # obtain a transition matrix from land use maps for 1985 and 1991
 crossTabulate(obs, times=c(0,10))
 ```
 
-The next stage is to relate observed land use or observed land use transitions to spatially explicit biophysical or socioeconomic explanatory variables. These are loaded as follows:
-
 ```{r PrepVars}
 ef <- ExpVarRasterList(x=Factors, pattern="ef")
 ```
-
-### 2. Probability surface modelling
-
-To fit predictive models we first divide the study region into training and testing partitions. The `partition` function returns a list with cell numbers for each partition:
 
 ```{r Partition}
 part <- partition(x=obs[[1]],
                   size=0.1, spatial=TRUE)
 ```
-
-We then extract cell values for the training and testing partitions.
 
 ```{r TrainTest}
 # extract training data
@@ -177,8 +126,6 @@ test.data <- getPredictiveModelInputData(obs=obs,
                                          ef=ef,
                                          cells=part[["test"]])
 ```
-
-Predictive models are represented by the `PredictiveModelList` class. For comparison, we create a `PredictiveModelList` object for each type of predictive model:
 
 ```{r Modelling}
 # fit models (note that a predictive model is required for each land use category)
@@ -208,7 +155,6 @@ rf.models <- randomForestModels(formula=forms,
 
 ```
 
-We can then use the fitted models to predict over the full data set and produce the probability surfaces for each fitted model:
 
 ```{r ProbabilityMaps, echo = TRUE, fig.width=10}
 all.data <- as.data.frame(x=ef, obs=obs, cells=part[["all"]])
@@ -220,9 +166,9 @@ points <- rasterToPoints(obs[[1]], spatial=TRUE)
 probmaps <- SpatialPointsDataFrame(points, probmaps)
 probmaps <- rasterize(x=probmaps, y=obs[[1]],
                       field=names(probmaps))
-rasterVis::levelplot(probmaps)
+# rasterVis::levelplot(probmaps)
 ```
-# OUTPUT PROBABILITY RASTERS
+
 ```{r OutputProbabilityRasters}
 # Loop through each band of the raster stack
 for (i in 1:nlayers(probmaps)) {
