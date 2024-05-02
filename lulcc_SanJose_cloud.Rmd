@@ -33,24 +33,12 @@ And the development version from [GitHub](https://github.com/) with:
 *Adapted from https://www.geosci-model-dev.net/8/3215/2015/*
 
 ```{r LoadLibraries}
-if (!"googleCloudStorageR" %in% rownames(installed.packages())) {
-    install.packages("googleCloudStorageR", dependencies = TRUE)
-}
-library(googleCloudStorageR)
-
-if (!"gargle" %in% rownames(installed.packages())) {
-    install.packages("gargle", dependencies = TRUE)
-}
-library(gargle)
-
-# if (!"Hmisc" %in% rownames(installed.packages())) {
-#     install.packages("Hmisc", dependencies = TRUE)
-# }
-# library(Hmisc)
-
 library(lulcc)
 library(raster)
 library(rasterVis)
+library(googleCloudStorageR)
+library(gargle)
+library(Hmisc)
 ```
 
 
