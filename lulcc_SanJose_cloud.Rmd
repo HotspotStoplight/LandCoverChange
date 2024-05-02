@@ -72,7 +72,7 @@ load("data/LandCover.RData")
 ```
 
 ```{r define output variables}
-# Define output folder and crop result for demonstration
+# Define output folder and crop result
 output_folder <- "data"  # Local directory to store plots
 outputs <- "outputs"   # Subfolder
 ```
@@ -452,16 +452,16 @@ create_and_upload_plot <- function(plot_code, plot_name, output_folder, outputs)
 create_and_upload_plot(
   plot_code = function() plot(clues.agr), 
   plot_name = "Clue-S_AgreementBudget.png",
-  output_folder = "path_to_local_output_directory",
-  outputs = "path_to_outputs_subdirectory"
+  output_folder = "data",
+  outputs = "outputs"
 )
 
 # Create and upload "Ordered AgreementBudget.png"
 create_and_upload_plot(
   plot_code = function() plot(ordered.agr), 
   plot_name = "Ordered_AgreementBudget.png",
-  output_folder = "path_to_local_output_directory",
-  outputs = "path_to_outputs_subdirectory"
+  output_folder = "data",
+  outputs = "outputs"
 )
 
 ```
