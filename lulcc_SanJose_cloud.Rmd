@@ -431,6 +431,11 @@ create_and_upload_plot <- function(plot_code, plot_name, output_folder, outputs)
   # Construct the full path for local saving
   local_file_path <- file.path(output_folder, outputs, plot_name)
   
+  # Ensure the directory for the final file exists
+  if(!dir.exists(dirname(local_file_path))) {
+    dir.create(dirname(local_file_path), recursive = TRUE)
+  }
+
   # Move the plot from the temporary location to the final local path
   if(!file.copy(temp_file, local_file_path, overwrite = TRUE)) {
     stop("Failed to move plot to final destination.")
@@ -448,7 +453,6 @@ create_and_upload_plot <- function(plot_code, plot_name, output_folder, outputs)
 }
 
 # Example usage:
-# Create and upload "Clue-S AgreementBudget.png"
 create_and_upload_plot(
   plot_code = function() plot(clues.agr), 
   plot_name = "Clue-S_AgreementBudget.png",
