@@ -86,22 +86,6 @@ obs <- ObsLulcRasterStack(x=LandCover,
                           t=c(0,10))
 ```
 
-```{r PlotLandCoverRasters, fig.width=12, fig.height=6.75}
-# # Assuming your ObsLulcRasterStack 'obs' is compatible with raster plotting
-# # Extract layers by time points (assuming two time points for simplicity)
-# lc_2013_raster <- raster(obs, layer=1)
-# lc_2023_raster <- raster(obs, layer=2)
-# 
-# # Plot the first time point
-# plot(lc_2013_raster, main="Land Cover 2013", col=c('darkgreen', 'tan', 'red', 'blue'), breaks=c(0.5, 1.5, 2.5, 3.5, 4.5), legend=FALSE)
-# legend("topright", legend=c('Forest', 'Other', 'Built', 'Water'), fill=c('darkgreen', 'tan', 'red', 'blue'))
-# 
-# # Plot the second time point
-# plot(lc_2023_raster, main="Land Cover 2023", col=c('darkgreen', 'tan', 'red', 'blue'), breaks=c(0.5, 1.5, 2.5, 3.5, 4.5), legend=FALSE)
-# legend("topright", legend=c('Forest', 'Other', 'Built', 'Water'), fill=c('darkgreen', 'tan', 'red', 'blue'))
-
-```
-
 ```{r CrossTabulate, echo=TRUE}
 # obtain a transition matrix from land use maps for 1985 and 1991
 crossTabulate(obs, times=c(0,10))
@@ -408,16 +392,19 @@ ordered.agr <- AgreementBudget(x=ordered.tabs)
 
 Export Agreement Plot
 ```{r AgreementPlotExport}
-# Function to create and upload a plot
 create_and_upload_plot <- function(plot_code, plot_name, output_folder, outputs) {
   # Ensure the local output directory exists
   full_output_path <- file.path(output_folder, outputs)
   if(!dir.exists(full_output_path)) {
     dir.create(full_output_path, recursive = TRUE)
+    cat("Directory created: ", full_output_path, "\n")
+  } else {
+    cat("Directory already exists: ", full_output_path, "\n")
   }
 
   # Create a temporary file path for the plot
   temp_file <- tempfile(fileext = ".png")
+  cat("Temporary file path: ", temp_file, "\n")
   
   # Start PNG device with the temporary file path
   png(temp_file, width = 1600, height = 900)
@@ -428,10 +415,13 @@ create_and_upload_plot <- function(plot_code, plot_name, output_folder, outputs)
   # Close the plotting device
   dev.off()
   
+  # Check if temporary file has content
+  if(file.info(temp_file)$size == 0) {
+    stop("No data written to the temporary file.")
+  }
+  
   # Construct the full path for local saving
   local_file_path <- file.path(output_folder, outputs, plot_name)
-  
-  # Ensure the directory for the final file exists
   if(!dir.exists(dirname(local_file_path))) {
     dir.create(dirname(local_file_path), recursive = TRUE)
   }
@@ -459,6 +449,7 @@ create_and_upload_plot(
   output_folder = "data",
   outputs = "outputs"
 )
+
 
 # Create and upload "Ordered AgreementBudget.png"
 create_and_upload_plot(
