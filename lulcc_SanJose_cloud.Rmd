@@ -444,7 +444,7 @@ create_and_upload_plot <- function(plot_code, plot_name, output_folder, outputs)
 
 # Example usage:
 create_and_upload_plot(
-  plot_code = function() plot(clues.agr), 
+  plot_code = plot(clues.agr), 
   plot_name = "Clue-S_AgreementBudget.png",
   output_folder = "data",
   outputs = "outputs"
@@ -453,7 +453,7 @@ create_and_upload_plot(
 
 # Create and upload "Ordered AgreementBudget.png"
 create_and_upload_plot(
-  plot_code = function() plot(ordered.agr), 
+  plot_code = plot(ordered.agr), 
   plot_name = "Ordered_AgreementBudget.png",
   output_folder = "data",
   outputs = "outputs"
