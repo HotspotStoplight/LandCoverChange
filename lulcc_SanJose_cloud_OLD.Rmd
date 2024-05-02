@@ -409,11 +409,11 @@ ordered.agr <- AgreementBudget(x=ordered.tabs)
 Export Agreement Plot
 ```{r AgreementPlotExport}
 # Function to create and upload a plot
-create_and_upload_plot <- function(plot_code, plot_name, output_folder, outputs) {
+create_and_upload_plot <- function(plot_code, plot_name) {
+
   # Ensure the local output directory exists
-  full_output_path <- file.path(output_folder, outputs)
-  if(!dir.exists(full_output_path)) {
-    dir.create(full_output_path, recursive = TRUE)
+  if(!dir.exists(file.path(output_folder, outputs))) {
+    dir.create(file.path(output_folder, outputs), recursive = TRUE)
   }
 
   # Create a temporary file path for the plot
@@ -432,9 +432,7 @@ create_and_upload_plot <- function(plot_code, plot_name, output_folder, outputs)
   local_file_path <- file.path(output_folder, outputs, plot_name)
   
   # Move the plot from the temporary location to the final local path
-  if(!file.copy(temp_file, local_file_path, overwrite = TRUE)) {
-    stop("Failed to move plot to final destination.")
-  }
+  file.copy(temp_file, local_file_path, overwrite = TRUE)
   
   # Set the GCS path which includes the folder structure within the bucket
   gcs_path <- file.path("data", outputs, plot_name)
@@ -449,21 +447,23 @@ create_and_upload_plot <- function(plot_code, plot_name, output_folder, outputs)
 
 # Example usage:
 # Create and upload "Clue-S AgreementBudget.png"
-create_and_upload_plot(
-  plot_code = function() plot(clues.agr), 
-  plot_name = "Clue-S_AgreementBudget.png",
-  output_folder = "path_to_local_output_directory",
-  outputs = "path_to_outputs_subdirectory"
-)
+create_and_upload_plot(plot_code = function() plot(clues.agr), plot_name = "Clue-S_AgreementBudget.png")
 
 # Create and upload "Ordered AgreementBudget.png"
-create_and_upload_plot(
-  plot_code = function() plot(ordered.agr), 
-  plot_name = "Ordered_AgreementBudget.png",
-  output_folder = "path_to_local_output_directory",
-  outputs = "path_to_outputs_subdirectory"
-)
+create_and_upload_plot(plot_code = function() plot(ordered.agr), plot_name = "Ordered_AgreementBudget.png")
 
+```
+
+```{r FigureOfMerit, echo=TRUE}
+# clues.fom <- FigureOfMerit(x=clues.agr)
+# plot(clues.fom, from=1, to=2)
+# plot(clues.fom, from=1, to=3)
+# plot(clues.fom, from=2, to=3)
+# 
+# ordered.fom <- FigureOfMerit(x=ordered.agr)
+# plot(ordered.fom, from=1, to=2)
+# plot(ordered.fom, from=1, to=3)
+# plot(ordered.fom, from=2, to=3)
 ```
 
 ### 4. Extrapolation
@@ -532,9 +532,9 @@ Clue-S Model Test
 clues_output <- clues.model@output
 
 # Plotting with rasterVis
-# levelplot(clues_output, 
-#           col.regions=colorRampPalette(c("darkgreen", "tan", "red", "blue")), 
-#           main="Future Land Use Categories (CLUE-S)")
+levelplot(clues_output, 
+          col.regions=colorRampPalette(c("darkgreen", "tan", "red", "blue")), 
+          main="Future Land Use Categories (CLUE-S)")
 
 ```
 
