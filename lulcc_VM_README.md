@@ -12,7 +12,7 @@ docker pull r-base
 docker run -it [image-name] sh
 ```
 
-##Next, we install additional dependencies in a container
+## Next, we install additional dependencies in a container
 ```bash
 apt-get update
 apt-get upgrade
@@ -24,9 +24,9 @@ apt-get install aptitude
 ```
 
 
-##Here, the ‘aptitude’ is a useful tool to solve dependency issues when installing a package. Whenever there are ‘unmet dependencies’ issues using apt-get, use ‘aptitude’ instead. There are some examples in the code below.
+## Here, the ‘aptitude’ is a useful tool to solve dependency issues when installing a package. Whenever there are ‘unmet dependencies’ issues using apt-get, use ‘aptitude’ instead. There are some examples in the code below.
 
-##An important step is to install the package ‘terra’, instructions are shown here https://github.com/rspatial/terra. But we will meet multiple bugs in our environment. Follow the following codes to install it. 
+## An important step is to install the package ‘terra’, instructions are shown here https://github.com/rspatial/terra. But we will meet multiple bugs in our environment. Follow the following codes to install it. 
 ```bash
 install.packages("Rcpp")
 
