@@ -9,8 +9,7 @@ knitr::opts_chunk$set(
   fig.path = "man/figures/README-",
   out.width = "100%"
 )
-rm(list=ls())
-
+rm(list = ls())
 ```
 
 lulcc provides a framework for spatially explicit land use change modelling in r. The long term goal of lulcc is to  provide a smart and tidy interface to running the standard land use change modelling in 4 steps: raster data prepping, probability surface generation, allocation and validation, in one tidy package.
@@ -44,7 +43,7 @@ library(Hmisc)
 
 ```{r Load Data from Google Cloud}
 ## Fetch token. See: https://developers.google.com/identity/protocols/oauth2/scopes
-scope <-c("https://www.googleapis.com/auth/cloud-platform")
+scope <- c("https://www.googleapis.com/auth/cloud-platform")
 token <- token_fetch(scopes = scope)
 
 ## Pass your token to gcs_auth
@@ -68,64 +67,75 @@ load("data/Factors.RData")
 
 # Load the second .RData file
 load("data/LandCover.RData")
-
 ```
 
 ```{r define output variables}
 # Define output folder and crop result
-output_folder <- "data"  # Local directory to store plots
-outputs <- "outputs"   # Subfolder
+output_folder <- "data" # Local directory to store plots
+outputs <- "outputs" # Subfolder
 ```
 
 
 ```{r DefineObsVariable}
-obs <- ObsLulcRasterStack(x=LandCover,
-                          pattern="lc",
-                          categories=c(1,2,3,4),
-                          labels=c('Forest', 'Other', 'Built', 'Water'),
-                          t=c(0,10))
+obs <- ObsLulcRasterStack(
+  x = LandCover,
+  pattern = "lc",
+  categories = c(1, 2, 3, 4),
+  labels = c("Forest", "Other", "Built", "Water"),
+  t = c(0, 10)
+)
 ```
 
 ```{r CrossTabulate, echo=TRUE}
 # obtain a transition matrix from land use maps for 1985 and 1991
-crossTabulate(obs, times=c(0,10))
+crossTabulate(obs, times = c(0, 10))
 ```
 
 ```{r PrepVars}
-ef <- ExpVarRasterList(x=Factors, pattern="ef")
+ef <- ExpVarRasterList(x = Factors, pattern = "ef")
 ```
 
 ```{r Partition}
-part <- partition(x=obs[[1]],
-                  size=0.1, spatial=TRUE)
+part <- partition(
+  x = obs[[1]],
+  size = 0.1, spatial = TRUE
+)
 ```
 
 ```{r TrainTest}
 # extract training data
-train.data <- getPredictiveModelInputData(obs=obs,
-                                          ef=ef,
-                                          cells=part[["train"]],
-                                          t=0)
+train.data <- getPredictiveModelInputData(
+  obs = obs,
+  ef = ef,
+  cells = part[["train"]],
+  t = 0
+)
 
-test.data <- getPredictiveModelInputData(obs=obs,
-                                         ef=ef,
-                                         cells=part[["test"]])
+test.data <- getPredictiveModelInputData(
+  obs = obs,
+  ef = ef,
+  cells = part[["test"]]
+)
 ```
 
 ```{r Modelling}
 # fit models (note that a predictive model is required for each land use category)
 # Factors <- stack(pop2010, slope, dist_urban, dist_road, dist_highway)
 
-forms <- list(Forest~ef_01+ef_02+ef_03+ef_04+ef_05,
-              Other~ef_01+ef_02+ef_03+ef_04+ef_05,
-              Built~ef_01+ef_02+ef_03+ef_04+ef_05,
-              Water~ef_01+ef_02+ef_03+ef_04+ef_05)
+forms <- list(
+  Forest ~ ef_01 + ef_02 + ef_03 + ef_04 + ef_05,
+  Other ~ ef_01 + ef_02 + ef_03 + ef_04 + ef_05,
+  Built ~ ef_01 + ef_02 + ef_03 + ef_04 + ef_05,
+  Water ~ ef_01 + ef_02 + ef_03 + ef_04 + ef_05
+)
 
 # generalized linear model models
-glm.models <- glmModels(formula=forms,
-                        family=binomial,
-                        data=train.data,
-                        obs=obs)
+glm.models <- glmModels(
+  formula = forms,
+  family = binomial,
+  data = train.data,
+  obs = obs
+)
 
 # recursive partitioning and regression tree models
 # rpart.models <- rpartModels(formula=forms,
@@ -133,29 +143,51 @@ glm.models <- glmModels(formula=forms,
 #                             obs=obs)
 
 # random forest models (WARNING: takes a long time!)
-rf.models <- randomForestModels(formula=forms,
-                                data=train.data,
-                                obs=obs,
-                                na.action=na.omit)
+library(foreach)
+library(doParallel)
 
+# Detect the number of available cores
+cores <- detectCores() - 1
+
+# Register the parallel backend
+cl <- makeCluster(cores)
+registerDoParallel(cl)
+
+# Function to fit random forest models using randomForestModels from the lulcc package
+rf_fit <- function(formula, data, obs) {
+  randomForestModels(formula = formula, data = data, obs = obs, na.action = na.omit)
+}
+
+# Parallelize the model fitting
+rf.models <- foreach(f = forms, .packages = "lulcc") %dopar% {
+  rf_fit(f, train.data, obs)
+}
+# rf.models <- randomForestModels(formula=forms,
+#                                 data=train.data,
+#                                 obs=obs,
+#                                 na.action=na.omit)
 ```
 
 ```{r ProbabilityMaps, echo = TRUE, fig.width=10}
-all.data <- as.data.frame(x=ef, obs=obs, cells=part[["all"]])
+all.data <- as.data.frame(x = ef, obs = obs, cells = part[["all"]])
 
-probmaps <- predict(object=rf.models,
-                    newdata=all.data,
-                    data.frame=TRUE)
-points <- rasterToPoints(obs[[1]], spatial=TRUE)
+probmaps <- predict(
+  object = rf.models,
+  newdata = all.data,
+  data.frame = TRUE
+)
+points <- rasterToPoints(obs[[1]], spatial = TRUE)
 probmaps <- SpatialPointsDataFrame(points, probmaps)
-probmaps <- rasterize(x=probmaps, y=obs[[1]],
-                      field=names(probmaps))
+probmaps <- rasterize(
+  x = probmaps, y = obs[[1]],
+  field = names(probmaps)
+)
 # rasterVis::levelplot(probmaps)
 ```
 
 ```{r OutputProbabilityRasters}
 # Ensure the local output directory exists
-if(!dir.exists(output_folder)) {
+if (!dir.exists(output_folder)) {
   dir.create(output_folder, recursive = TRUE)
 }
 
@@ -166,14 +198,14 @@ for (i in 1:nlayers(probmaps)) {
 
   # Create a filename from the band's name
   filename <- paste0(names(single_band), ".tif")
-  
+
   # Construct the full path for local saving
   local_file_path <- file.path(output_folder, outputs, filename)
-  dir.create(dirname(local_file_path), recursive = TRUE)  # Ensure directory exists
+  dir.create(dirname(local_file_path), recursive = TRUE) # Ensure directory exists
 
   # Write the single band raster to the local TIFF file
   writeRaster(single_band, local_file_path, format = "GTiff", overwrite = TRUE)
-  
+
   # Set the GCS path which includes the folder structure within the bucket
   gcs_path <- file.path("data", outputs, filename)
 
@@ -183,26 +215,33 @@ for (i in 1:nlayers(probmaps)) {
   # Optionally, remove the local file to free up space, if not needed locally
   unlink(local_file_path)
 }
-
 ```
 
 ```{r Performance, echo = TRUE}
-#GLM
-glm.pred <- PredictionList(models=glm.models,
-                           newdata=test.data)
-glm.perf <- PerformanceList(pred=glm.pred,
-                            measure="rch")
-#RPART
+# GLM
+glm.pred <- PredictionList(
+  models = glm.models,
+  newdata = test.data
+)
+glm.perf <- PerformanceList(
+  pred = glm.pred,
+  measure = "rch"
+)
+# RPART
 # rpart.pred <- PredictionList(models=rpart.models,
 #                              newdata=test.data)
 # rpart.perf <- PerformanceList(pred=rpart.pred,
 #                               measure="rch")
 
-#Random Forest
-rf.pred <- PredictionList(models=rf.models,
-                          newdata=test.data)
-rf.perf <- PerformanceList(pred=rf.pred,
-                           measure="rch")
+# Random Forest
+rf.pred <- PredictionList(
+  models = rf.models,
+  newdata = test.data
+)
+rf.perf <- PerformanceList(
+  pred = rf.pred,
+  measure = "rch"
+)
 # #Plot ROC Curves
 # plot(list(glm=glm.perf,
 #           rf=rf.perf))
@@ -217,19 +256,19 @@ temp_file <- tempfile(fileext = ".png")
 png(temp_file, width = 1600, height = 900)
 
 # Insert your plotting code here; replace 'plot(...)' with your actual plotting function
-plot(list(glm=glm.perf, rf=rf.perf))
+plot(list(glm = glm.perf, rf = rf.perf))
 
 # Close the plotting device
 dev.off()
 
 # Ensure the local output directory exists
-if(!dir.exists(output_folder)) {
+if (!dir.exists(output_folder)) {
   dir.create(output_folder, recursive = TRUE)
 }
 
 # Construct the full path for local saving and GCS upload
 local_file_path <- file.path(output_folder, outputs, "ROC_Curves.png")
-dir.create(dirname(local_file_path), recursive = TRUE)  # Ensure directory exists
+dir.create(dirname(local_file_path), recursive = TRUE) # Ensure directory exists
 
 # Copy the file from temp location to the local desired path
 file.copy(temp_file, local_file_path)
@@ -242,6 +281,5 @@ gcs_upload(local_file_path, name = gcs_path)
 
 # Optionally, remove the temporary file to free up space
 unlink(temp_file)
-
 ```
 
