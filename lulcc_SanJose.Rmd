@@ -151,7 +151,26 @@ rpart.models <- rpartModels(
   obs = obs
 )
 # random forest models (WARNING: takes a long time!)
-rf.models <- randomForestModels(formula = forms, data = train.data, obs = obs, na.action = na.omit)
+library(foreach)
+library(doParallel)
+
+# Detect the number of available cores
+cores <- detectCores() - 1
+
+# Register the parallel backend
+cl <- makeCluster(cores)
+registerDoParallel(cl)
+
+# Function to fit random forest models using randomForestModels from the lulcc package
+rf_fit <- function(formula, data, obs) {
+  randomForestModels(formula = formula, data = data, obs = obs, na.action = na.omit)
+}
+
+# Parallelize the model fitting
+rf.models <- foreach(f = forms, .packages = 'lulcc') %dopar% {
+  rf_fit(f, train.data, obs)
+}
+# rf.models <- randomForestModels(formula = forms, data = train.data, obs = obs, na.action = na.omit)
 ```
 
 We can then use the fitted models to predict over the full data set and produce the probability surfaces for each fitted model:
